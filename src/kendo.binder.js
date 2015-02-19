@@ -703,6 +703,10 @@ var __meta__ = {
 
                 if (field) {
                     source = this.bindings.source.get();
+                    if (source instanceof kendo.data.DataSource) {
+                        source = source.view();
+                    }
+
                     for (valueIndex = 0; valueIndex < values.length; valueIndex++) {
                         for (idx = 0, length = source.length; idx < length; idx++) {
                             if (source[idx].get(field) == values[valueIndex]) {
@@ -716,7 +720,7 @@ var __meta__ = {
                 value = this.bindings[VALUE].get();
                 if (value instanceof ObservableArray) {
                     value.splice.apply(value, [0, value.length].concat(values));
-                } else if (!valuePrimitive && (value instanceof ObservableObject || !field)) {
+                } else if (!valuePrimitive && (value instanceof ObservableObject || value === null || value === undefined || !field)) {
                     this.bindings[VALUE].set(values[0]);
                 } else {
                     this.bindings[VALUE].set(values[0].get(field));
@@ -1137,7 +1141,7 @@ var __meta__ = {
                         var newValue;
                         var found;
 
-                        while (old) {
+                        while (old !== undefined) {
                             found = false;
                             for (j = 0; j < newLength; j++) {
                                 if (valuePrimitive) {
@@ -1225,6 +1229,26 @@ var __meta__ = {
                 }
 
             })
+        },
+        scheduler: {
+            source: dataSourceBinding("source", "dataSource", "setDataSource").extend({
+                dataBound: function(e) {
+                    var idx;
+                    var length;
+                    var widget = this.widget;
+                    var elements = e.addedItems || widget.items();
+                    var data, parents;
+
+                    if (elements.length) {
+                        data = e.addedDataItems || widget.dataItems();
+                        parents = this.bindings.source._parents();
+
+                        for (idx = 0, length = data.length; idx < length; idx++) {
+                            bindElement(elements[idx], data[idx], this._ns(e.ns), [data[idx]].concat(parents));
+                        }
+                    }
+                }
+            })
         }
     };
 
@@ -1286,25 +1310,27 @@ var __meta__ = {
         },
 
         bind: function(bindings) {
-            var nodeName = this.target.nodeName.toLowerCase(),
-                key,
+            var key,
                 hasValue,
                 hasSource,
                 hasEvents,
-                specificBinders = binders[nodeName] || {};
+                hasChecked,
+                widgetBinding = this instanceof WidgetBindingTarget,
+                specificBinders = this.binders();
 
             for (key in bindings) {
                 if (key == VALUE) {
                     hasValue = true;
                 } else if (key == SOURCE) {
                     hasSource = true;
-                } else if (key == EVENTS) {
+                } else if (key == EVENTS && !widgetBinding) {
                     hasEvents = true;
+                } else if (key == CHECKED) {
+                    hasChecked = true;
                 } else {
                     this.applyBinding(key, bindings, specificBinders);
                 }
             }
-
             if (hasSource) {
                 this.applyBinding(SOURCE, bindings, specificBinders);
             }
@@ -1313,9 +1339,17 @@ var __meta__ = {
                 this.applyBinding(VALUE, bindings, specificBinders);
             }
 
-            if (hasEvents) {
+            if (hasChecked) {
+                this.applyBinding(CHECKED, bindings, specificBinders);
+            }
+
+            if (hasEvents && !widgetBinding) {
                 this.applyBinding(EVENTS, bindings, specificBinders);
             }
+        },
+
+        binders: function() {
+            return binders[this.target.nodeName.toLowerCase()] || {};
         },
 
         applyBinding: function(name, bindings, specificBinders) {
@@ -1355,30 +1389,8 @@ var __meta__ = {
     });
 
     var WidgetBindingTarget = BindingTarget.extend( {
-        bind: function(bindings) {
-            var that = this,
-                binding,
-                hasValue = false,
-                hasSource = false,
-                specificBinders = binders.widget[that.target.options.name.toLowerCase()] || {};
-
-            for (binding in bindings) {
-                if (binding == VALUE) {
-                    hasValue = true;
-                } else if (binding == SOURCE) {
-                    hasSource = true;
-                } else {
-                    that.applyBinding(binding, bindings, specificBinders);
-                }
-            }
-
-            if (hasSource) {
-                that.applyBinding(SOURCE, bindings, specificBinders);
-            }
-
-            if (hasValue) {
-                that.applyBinding(VALUE, bindings, specificBinders);
-            }
+        binders: function() {
+            return binders.widget[this.target.options.name.toLowerCase()] || {};
         },
 
         applyBinding: function(name, bindings, specificBinders) {

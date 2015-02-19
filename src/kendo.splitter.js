@@ -48,6 +48,16 @@ var __meta__ = {
         return !isPercentageSize(size) && !isPixelSize(size);
     }
 
+    function calculateSize(size, total) {
+        var output = parseInt(size, 10);
+
+        if (isPercentageSize(size)) {
+            output = Math.floor(output * total / 100);
+        }
+
+        return output;
+    }
+
     function panePropertyAccessor(propertyName, triggersResize) {
         return function(pane, value) {
             var paneConfig = this.element.find(pane).data(PANE);
@@ -101,6 +111,14 @@ var __meta__ = {
             LAYOUTCHANGE
         ],
 
+        _addOverlays: function() {
+            this._panes().append("<div class='k-splitter-overlay k-overlay' />");
+        },
+
+        _removeOverlays: function() {
+            this._panes().children(".k-splitter-overlay").remove();
+        },
+
         _attachEvents: function() {
             var that = this,
                 orientation = that.options.orientation;
@@ -108,7 +126,7 @@ var __meta__ = {
             // do not use delegated events to increase performance of nested elements
             that.element
                 .children(".k-splitbar-draggable-" + orientation)
-                    .on("keydown" + NS, $.proxy(that._keydown, that))
+                    .on("keydown" + NS, proxy(that._keydown, that))
                     .on("mousedown" + NS, function(e) { e.currentTarget.focus(); })
                     .on("focus" + NS, function(e) { $(e.currentTarget).addClass(FOCUSED);  })
                     .on("blur" + NS, function(e) { $(e.currentTarget).removeClass(FOCUSED);
@@ -118,8 +136,7 @@ var __meta__ = {
                     })
                     .on(MOUSEENTER + NS, function() { $(this).addClass("k-splitbar-" + that.orientation + "-hover"); })
                     .on(MOUSELEAVE + NS, function() { $(this).removeClass("k-splitbar-" + that.orientation + "-hover"); })
-                    .on("mousedown" + NS, function() { that._panes().append("<div class='k-splitter-overlay k-overlay' />"); })
-                    .on("mouseup" + NS, function() { that._panes().children(".k-splitter-overlay").remove(); })
+                    .on("mousedown" + NS, proxy(that._addOverlays, that))
                 .end()
                 .children(".k-splitbar")
                     .on("dblclick" + NS, proxy(that._togglePane, that))
@@ -127,7 +144,9 @@ var __meta__ = {
                     .children(".k-expand-next, .k-expand-prev").on(CLICK + NS, that._arrowClick(EXPAND)).end()
                 .end();
 
-            $(window).on("resize" + NS + that._marker, proxy(that.resize, that));
+            $(window)
+                .on("resize" + NS + that._marker, proxy(that.resize, that))
+                .on("mouseup" + NS + that._marker, proxy(that._removeOverlays, that));
         },
 
         _detachEvents: function() {
@@ -339,6 +358,10 @@ var __meta__ = {
                         catIconIf("k-collapse-next", nextCollapsible && !nextCollapsed && !prevCollapsed) +
                         catIconIf("k-expand-next", nextCollapsible && nextCollapsed && !prevCollapsed)
                     );
+
+            if (!draggable && !prevCollapsible && !nextCollapsible) {
+                splitbar.removeAttr("tabindex");
+            }
         },
         _updateSplitBars: function() {
             var that = this;
@@ -359,6 +382,9 @@ var __meta__ = {
             this.element.children(".k-splitbar").remove();
         },
         _panes: function() {
+            if (!this.element) {
+                return $();
+            }
             return this.element.children(PANECLASS);
         },
 
@@ -394,20 +420,18 @@ var __meta__ = {
 
             panes.css({ position: "absolute", top: 0 })
                 [sizingProperty](function() {
-                    var config = $(this).data(PANE) || {}, size;
+                    var element = $(this),
+                        config = element.data(PANE) || {}, size;
 
+                    element.removeClass("k-state-collapsed");
                     if (config.collapsed) {
-                        size = 0;
-                        $(this).css("overflow", "hidden");
+                        size = config.collapsedSize ? calculateSize(config.collapsedSize, totalSize) : 0;
+                        element.css("overflow", "hidden").addClass("k-state-collapsed");
                     } else if (isFluid(config.size)) {
                         freeSizedPanes = freeSizedPanes.add(this);
                         return;
                     } else { // sized in px/%, not collapsed
-                        size = parseInt(config.size, 10);
-
-                        if (isPercentageSize(config.size)) {
-                            size = Math.floor(size * totalSize / 100);
-                        }
+                        size = calculateSize(config.size, totalSize);
                     }
 
                     sizedPanesCount++;

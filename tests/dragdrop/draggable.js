@@ -225,4 +225,55 @@
 
         equal($(".hint").length, 0);
     });
+
+    asyncTest("hintDestroyed event is after the 'back to' animation is finished", 1, function() {
+        setup({
+            hint: $("<div></div>").addClass("hint"),
+            hintDestroyed: function() {
+                start();
+                ok(true);
+            }
+        });
+
+        trigger("mousedown", { pageX: 1, pageY: 1 });
+        trigger("mousemove", { pageX: 10, pageY: 1 });
+        trigger("mouseup", { pageX: 10, pageY: 2 });
+    });
+
+    asyncTest("hintDestroyed event is raised after dragging is cancelled", 1, function() {
+        setup({
+            hint: $("<div></div>").addClass("hint"),
+            hintDestroyed: function() {
+                start();
+                ok(true);
+            }
+        });
+
+        trigger("mousedown", { pageX: 1, pageY: 1 });
+        trigger("mousemove", { pageX: 10, pageY: 1 });
+        trigger("keyup", { keyCode: 27});
+    });
+
+    test("initialTouch target is passed in dragstart event data", 2, function() {
+
+        QUnit.fixture.find("span")
+            .attr("id", "foo")
+            .css({
+                display: "block",
+                "background-color": "red",
+                width: 20,
+                height: 20
+            })
+            .append("<span id='bar' style='width:10px; height: 10px; background-color: blue; display: block;' />");
+
+        setup({
+            dragstart: function(e) {
+                equal($(e.initialTarget).attr("id"), "bar");
+                equal($(e.target).attr("id"), "foo");
+            }
+        });
+
+        trigger("mousedown", { pageX: 1, pageY: 1 }, QUnit.fixture.find("#bar"));
+        trigger("mousemove", { pageX: 21, pageY: 1 }, QUnit.fixture.find("#foo"));
+    });
 })();

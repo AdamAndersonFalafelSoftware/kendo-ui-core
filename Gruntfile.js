@@ -126,13 +126,15 @@ module.exports = function(grunt) {
                         tests
                     )
                 }
-            },
+            },          
             legacyUnit: {
                 options: {
-                    browsers: [],
+                    browsers: browserOption ? [ browserOption ] : [],
 
                     files: [].concat(
-                        TESTS.beforeTestFiles,
+                        TESTS.beforeTestFiles.filter(function(x) {
+                            return !/angular/i.test(x);
+                        }),
                         allKendoFiles,
                         TESTS.afterTestFiles.filter(function(x) {
                             return !/(themeuilder|less)\.js/i.test(x);
@@ -199,6 +201,11 @@ module.exports = function(grunt) {
                        "!src/cultures/kendo.culture.*.min.js" ],
                 dest: "<%= kendo.options.jsDestDir %>/cultures",
             },
+            messages: {
+                src: [ "src/messages/kendo.messages.*.js",
+                       "!src/messages/kendo.messages.*.min.js" ],
+                dest: "<%= kendo.options.jsDestDir %>/messages",
+            }
         },
 
         download_builder: {

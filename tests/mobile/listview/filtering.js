@@ -24,6 +24,19 @@
         return new ListView(ul, options);
     }
 
+    test("clears input when filters are removed", function() {
+            var listview = filterableListview({
+                dataSource: {
+                    data: ["foo", "bar"]
+                }
+            }),
+            input = listview.wrapper.find("input");
+            input.val("foo");
+            listview.dataSource.filter({});
+            equal(input.val().length, 0);
+     });
+
+
     test("filterable creates search input", function() {
         var listview = filterableListview();
 
@@ -117,7 +130,7 @@
 
         var expr = filter.args("filter", 0)[0];
         equal(expr.field, undefined);
-        equal(expr.operator, "startsWith");
+        equal(expr.operator, "startswith");
         equal(expr.value, "foo");
     });
 

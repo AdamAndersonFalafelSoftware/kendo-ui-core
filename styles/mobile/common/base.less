@@ -73,8 +73,7 @@
 .km-vertical .km-collapsible-pane {
     position: absolute;
     z-index: 2 !important;
-    -webkit-transition: -webkit-transform 350ms ease-out;
-    -ms-transition: -ms-transform 350ms ease-out;
+    .pTransition(transform 350ms ease-out);
     .transform(translatex(-100%));
 }
 
@@ -175,11 +174,6 @@
     width: 100%;
 }
 
-.k-ff .km-scrollview > div
-{
-    display: inline-block;
-}
-
 .km-header
 {
     padding: 0;
@@ -195,7 +189,11 @@
     display: none;
 }
 
-[data-role="view"], [data-role="drawer"]
+/**
+ * The angular tags will be converted to div kendo-mobile-view
+ *
+ */
+[data-role="view"], [data-role="drawer"], kendo-mobile-view, kendo-mobile-split-view, kendo-mobile-drawer
 {
     visibility: hidden;
 }
@@ -440,10 +438,16 @@
     overflow-x: visible;
 }
 
+.km-native-scrolling,
 .km-native-scrolling .km-pane,
 .km-native-scrolling .km-view
 {
     -ms-touch-action: auto;
+}
+
+.km-native-scrolling .km-pane,
+.km-native-scrolling .km-view
+{
     display: block;
 }
 

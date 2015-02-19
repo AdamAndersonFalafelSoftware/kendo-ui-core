@@ -148,6 +148,7 @@ var __meta__ = {
             CLOSE,
             CHANGE,
             SELECT,
+            "filtering",
             "dataBinding",
             "dataBound"
         ],
@@ -278,7 +279,7 @@ var __meta__ = {
                 wrapper
                     .removeClass(STATEDISABLED)
                     .on(HOVEREVENTS, that._toggleHover)
-                    .on("mousedown" + ns, proxy(that._wrapperMousedown, that));
+                    .on("mousedown" + ns + " touchend" + ns, proxy(that._wrapperMousedown, that));
 
                 that.input.on(KEYDOWN, proxy(that._keydown, that))
                     .on("paste" + ns, proxy(that._search, that))
@@ -393,7 +394,9 @@ var __meta__ = {
                 ignoreCase = options.ignoreCase,
                 filter = options.filter,
                 field = options.dataTextField,
-                inputValue = that.input.val();
+                inputValue = that.input.val(),
+                expression,
+                length;
 
             if (options.placeholder === inputValue) {
                 inputValue = "";
@@ -403,16 +406,21 @@ var __meta__ = {
 
             word = typeof word === "string" ? word : inputValue;
 
-            if (word.length >= options.minLength) {
+            length = word.length;
+
+            if (!length || length >= options.minLength) {
                 that._state = FILTER;
                 that._open = true;
 
-                that._filterSource({
+                expression = {
                     value: ignoreCase ? word.toLowerCase() : word,
                     field: field,
                     operator: filter,
                     ignoreCase: ignoreCase
-                });
+                };
+
+                that._filterSource(expression, that._retrieveData);
+                that._retrieveData = false;
             }
         },
 

@@ -2,6 +2,42 @@
 
 /* Filter menu operator messages */
 
+if (kendo.ui.FilterCell) {
+kendo.ui.FilterCell.prototype.options.operators =
+$.extend(true, kendo.ui.FilterCell.prototype.options.operators,{
+  "date": {
+    "eq": "Eşittir",
+    "gt": "Sonra",
+    "gte": "Sonra ya da eşit",
+    "lt": "Önce",
+    "lte": "Önce ya da eşit",
+    "neq": "Eşit değildir"
+  },
+  "enums": {
+    "eq": "Eşittir",
+    "neq": "Eşit değildir"
+  },
+  "number": {
+    "eq": "Eşittir",
+    "gt": "Büyüktür",
+    "gte": "Daha büyük veya eşittir",
+    "lt": "Daha küçük",
+    "lte": "Daha küçük veya eşit",
+    "neq": "Eşit değildir"
+  },
+  "string": {
+    "contains": "İçeriyor",
+    "doesnotcontain": "İçermiyor",
+    "endswith": "İle biter",
+    "eq": "Eşittir",
+    "neq": "Eşit değildir",
+    "startswith": "İle başlar"
+  }
+});
+}
+
+/* Filter menu operator messages */
+
 if (kendo.ui.FilterMenu) {
 kendo.ui.FilterMenu.prototype.options.operators =
 $.extend(true, kendo.ui.FilterMenu.prototype.options.operators,{
@@ -13,7 +49,7 @@ $.extend(true, kendo.ui.FilterMenu.prototype.options.operators,{
     "lte": "Önce ya da eşit",
     "neq": "Eşit değildir"
   },
-  "enum": {
+  "enums": {
     "eq": "Eşittir",
     "neq": "Eşit değildir"
   },
@@ -172,6 +208,19 @@ $.extend(true, kendo.ui.Editor.prototype.options.messages,{
 });
 }
 
+/* FilterCell messages */
+
+if (kendo.ui.FilterCell) {
+kendo.ui.FilterCell.prototype.options.messages =
+$.extend(true, kendo.ui.FilterCell.prototype.options.messages,{
+  "clear": "Temizle",
+  "filter": "Filtre",
+  "isFalse": "FALSE",
+  "isTrue": "Doğru ",
+  "operator": "Operatör(işletmen)"
+});
+}
+
 /* FilterMenu messages */
 
 if (kendo.ui.FilterMenu) {
@@ -228,7 +277,7 @@ $.extend(true, kendo.ui.Groupable.prototype.options.messages,{
 if (kendo.ui.Pager) {
 kendo.ui.Pager.prototype.options.messages =
 $.extend(true, kendo.ui.Pager.prototype.options.messages,{
-  "display": "{0} - {1} {2} öğeleri",
+  "display": "{0} - {1} aralığı gösteriliyor. Toplam {2} öğe var",
   "empty": "Görüntülenecek öğe yok",
   "first": "İlk sayfaya git",
   "itemsPerPage": "Sayfa başına ürün",
@@ -310,6 +359,6 @@ $.extend(true, kendo.ui.Upload.prototype.options.localization,{
   "statusFailed": "Başarız Oldu",
   "statusUploaded": "Yüklendi",
   "statusUploading": "Yükleniyor",
-  "uploadSelectedFiles": "Dosyaları Yükle"
+  "uploadSelectedFiles": "seçilen dosyaları Yükle"
 });
 }

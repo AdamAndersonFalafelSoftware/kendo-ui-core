@@ -201,7 +201,8 @@ var __meta__ = {
     var PopOver = Widget.extend({
         init: function(element, options) {
             var that = this,
-                popupOptions;
+                popupOptions,
+                paneOptions;
 
             that.initialOpen = false;
 
@@ -213,9 +214,13 @@ var __meta__ = {
             }, this.options.popup);
 
             that.popup = new Popup(that.element, popupOptions);
-            that.popup.overlay.on("move", false);
+            that.popup.overlay.on("move", function(e) {
+                if (e.target == that.popup.overlay[0]) {
+                    e.preventDefault();
+                }
+            });
 
-            that.pane = new ui.Pane(that.element, this.options.pane);
+            that.pane = new ui.Pane(that.element, $.extend(this.options.pane, { $angular: this.options.$angular }));
             that.pane.navigateToInitial();
 
             kendo.notify(that, ui);
@@ -239,6 +244,8 @@ var __meta__ = {
                 this.pane.navigate("");
                 this.popup.popup._position();
                 this.initialOpen = true;
+            } else {
+                this.pane.view()._invokeNgController();
             }
         },
 

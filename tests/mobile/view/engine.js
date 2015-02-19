@@ -76,6 +76,16 @@
         hidden($("#foo"));
     });
 
+    test("prevent default on before hide event handler does not hide view", 2, function() {
+        root.html('<div data-role="view" id="foo">Foo</div><div data-role="view" data-before-hide="kendo.preventDefault" id="bar">Bar</div>').show();
+        viewEngine = new kendo.mobile.ViewEngine({ container: root });
+
+        viewEngine.showView("#bar");
+        viewEngine.showView("#foo");
+        hidden($("#foo"));
+        visible($("#bar"));
+    });
+
     test("after show is triggered after the view transition is finished", 1, function() {
         root.html('<div data-role="view"id="foo">Foo</div><div data-after-show="viewEngineSuccess" data-role="view" id="bar">Bar</div>').show();
         viewEngine = new kendo.mobile.ViewEngine({ container: root });
@@ -95,6 +105,22 @@
     asyncTest("Shows remote view", 2, function() {
         $.mockjax({
             url: "page2.html",
+            responseText: '<body><div data-role="view" id="page2">Page 2</div></body>'
+        });
+
+        viewEngine.bind("viewShow", function(e) {
+            start();
+            equal(root.find("#page2").length, 1, "Remote view is inserted in the application DOM element");
+            equal(e.view.element[0], root.find("#page2")[0]);
+        });
+
+        viewEngine.showView("page2.html");
+    });
+
+    asyncTest("Works with safari/cordova local file quirk", 2, function() {
+        $.mockjax({
+            url: "page2.html",
+            status: 0,
             responseText: '<body><div data-role="view" id="page2">Page 2</div></body>'
         });
 
@@ -376,7 +402,7 @@
           viewEngine = new kendo.mobile.ViewEngine({ container: root, layout: "foo" });
 
         viewEngine.bind("viewShow", function(e) {
-            equal(e.view.layout, "");
+            equal(e.view.layout, null);
         });
 
         viewEngine.showView("");

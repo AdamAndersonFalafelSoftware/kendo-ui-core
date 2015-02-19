@@ -24,6 +24,7 @@ var __meta__ = {
         BUTTON_GROUP = "k-button-group",
         SPLIT_BUTTON = "k-split-button",
         SEPARATOR = "k-separator",
+        POPUP = "k-popup",
 
         RESIZABLE_TOOLBAR = "k-toolbar-resizable",
         STATE_ACTIVE = "k-state-active",
@@ -72,6 +73,14 @@ var __meta__ = {
                     var items = options.buttons,
                         item;
 
+                    if (!items) {
+                        return;
+                    }
+
+                    if (options.attributes) {
+                        element.attr(options.attributes);
+                    }
+
                     element.data({ type: "buttonGroup" });
                     element.attr(KENDO_UID_ATTR, options.uid);
 
@@ -87,8 +96,11 @@ var __meta__ = {
                     element.children().last().addClass(GROUP_END);
                 },
                 toolbar: function (options) {
-                    var element = $('<div class="' + BUTTON_GROUP + '"></div>');
+                    var element = $('<div></div>');
+
                     components.buttonGroup.base(options, components.button.toolbar, element);
+
+                    element.addClass(BUTTON_GROUP);
 
                     if (options.align) {
                         element.addClass("k-align-" + options.align);
@@ -101,8 +113,11 @@ var __meta__ = {
                     return element;
                 },
                 overflow: function (options) {
-                    var element = $('<li class="' + (options.mobile ? "" : BUTTON_GROUP) + ' k-overflow-group"></li>');
+                    var element = $('<li></li>');
+
                     components.buttonGroup.base(options, components.button.overflow, element);
+
+                    element.addClass((options.mobile ? "" : BUTTON_GROUP) + " k-overflow-group");
 
                     if (options.id) {
                         element.attr("id", options.id + "_overflow");
@@ -177,10 +192,6 @@ var __meta__ = {
                         item.appendTo(element);
                     }
 
-                    if (options.id) {
-                        element.attr("id", options.id + "_overflow");
-                    }
-
                     element.data({ type: "splitButton" });
                     element.attr(KENDO_UID_ATTR, options.uid);
 
@@ -190,16 +201,35 @@ var __meta__ = {
 
             separator: {
                 base: function(options, overflow) {
-                    var element = overflow ? $('<li class="k-separator">&nbsp;</li>') : $('<div class="k-separator">&nbsp;</div>');
+                    var element = overflow ? $('<li>&nbsp;</li>') : $('<div>&nbsp;</div>');
                     element.data({ type: "separator" });
                     element.attr(KENDO_UID_ATTR, options.uid);
+
+                    if (options.attributes) {
+                        element.attr(options.attributes);
+                    }
+
+                    element.addClass(SEPARATOR);
+
                     return element;
                 },
                 toolbar: function(options) {
-                   return components.separator.base(options, false);
+                   var element = components.separator.base(options, false);
+
+                   if (options.id) {
+                       element.attr("id", options.id);
+                   }
+
+                   return element;
                 },
                 overflow: function(options) {
-                   return components.separator.base(options, true);
+                    var element = components.separator.base(options, true);
+
+                    if (options.id) {
+                        element.attr("id", options.id + "_overflow");
+                    }
+
+                    return  element;
                 }
             },
 
@@ -213,6 +243,10 @@ var __meta__ = {
 
             element.data({ type: "button" });
             element.attr(KENDO_UID_ATTR, options.uid);
+
+            if (options.attributes) {
+                element.attr(options.attributes);
+            }
 
             if (options.togglable) {
                 element.addClass(TOGGLE_BUTTON);
@@ -269,7 +303,7 @@ var __meta__ = {
                 if (options.mobile) {
                     element.html('<span class="km-text">' + options.text + "</span>");
                 } else {
-                    element.text(options.text);
+                    element.html(options.text);
                 }
             }
 
@@ -300,7 +334,7 @@ var __meta__ = {
                 if (options.mobile) {
                     element.html('<span class="km-text">' + options.text + "</span>");
                 } else {
-                    element.text(options.text);
+                    element.html(options.text);
                 }
             }
 
@@ -422,6 +456,7 @@ var __meta__ = {
 
                     that.overflowUserEvents = new kendo.UserEvents(that.element, {
                         threshold: 5,
+                        allowSelection: true,
                         filter: "." + OVERFLOW_ANCHOR,
                         tap: proxy(that._toggleOverflow, that)
                     });
@@ -441,6 +476,7 @@ var __meta__ = {
 
                 that.userEvents = new kendo.UserEvents(document, {
                     threshold: 5,
+                    allowSelection: true,
                     filter:
                         "[" + KENDO_UID_ATTR + "=" + this.uid + "] ." + BUTTON + ", " +
                         "[" + KENDO_UID_ATTR + "=" + this.uid + "] ." + OVERFLOW_BUTTON,
@@ -512,6 +548,10 @@ var __meta__ = {
                 if (options.overflow !== OVERFLOW_NEVER && that.options.resizable) {
                     if (overflowTemplate) { //template command
                         overflowElement = isFunction(overflowTemplate) ? $(overflowTemplate(options)) : $(overflowTemplate);
+
+                        if (options.id) {
+                            overflowElement.attr("id", options.id + "_overflow");
+                        }
                     } else if (component) { //build-in command
                         overflowElement = (component.overflow || $.noop)(options);
                     }
@@ -545,6 +585,12 @@ var __meta__ = {
                         }
 
                         element = element.wrap("<div></div>").parent();
+                        if (options.id) {
+                           element.attr("id", options.id);
+                        }
+                        if (options.attributes) {
+                            element.attr(options.attributes);
+                        }
                         element.attr(KENDO_UID_ATTR, options.uid);
                     } else if (component) { //build-in command
                         element = (component.toolbar || $.noop)(options);
@@ -569,26 +615,53 @@ var __meta__ = {
             },
 
             remove: function(element) {
-                var commandElement = this.element.find(element),
-                    type = commandElement.data("type"),
-                    uid = commandElement.attr(KENDO_UID_ATTR);
+                var toolbarElement,
+                    overflowElement,
+                    isResizable = this.options.resizable,
+                    type, uid;
 
-                if (commandElement.parent("." + SPLIT_BUTTON).data("type")) {
-                    type = "splitButton";
-                    commandElement = commandElement.parent();
+                toolbarElement = this.element.find(element);
+
+                if (isResizable) {
+                    overflowElement = this.popup.element.find(element);
                 }
 
-                if (type === "splitButton") {
-                    commandElement.data("kendoPopup").destroy();
+                if (toolbarElement.length) {
+                    type = toolbarElement.data("type");
+                    uid = toolbarElement.attr(KENDO_UID_ATTR);
+
+                    if (toolbarElement.parent("." + SPLIT_BUTTON).data("type") === "splitButton") {
+                        type = "splitButton";
+                        toolbarElement = toolbarElement.parent();
+                    }
+
+                    overflowElement = isResizable ? this.popup.element.find("li[" + KENDO_UID_ATTR + "='" + uid + "']") : $([]);
+                } else if (overflowElement.length) {
+                    type = overflowElement.data("type");
+                    overflowElement = overflowElement.parent();
+
+                    if (overflowElement.data("type") === "splitButton") {
+                        type = "splitButton";
+                    }
+
+                    uid = overflowElement.attr(KENDO_UID_ATTR);
+                    toolbarElement = this.element.find("div." + SPLIT_BUTTON + "[" + KENDO_UID_ATTR + "='" + uid + "']");
                 }
 
-                commandElement
-                    .add(this.popup.element.find("[" + KENDO_UID_ATTR + "='" + commandElement.attr(KENDO_UID_ATTR) + "']"))
-                    .remove();
+                if (type === "splitButton" && toolbarElement.data("kendoPopup")) {
+                    toolbarElement.data("kendoPopup").destroy();
+                }
+
+                toolbarElement.remove();
+                overflowElement.remove();
             },
 
             enable: function(element, enable) {
                 var uid = this.element.find(element).attr(KENDO_UID_ATTR);
+
+                if (!uid && this.popup) {
+                    uid = this.popup.element.find(element).parent("li").attr(KENDO_UID_ATTR);
+                }
 
                 if (typeof enable == "undefined") {
                     enable = true;
@@ -692,7 +765,7 @@ var __meta__ = {
             },
 
             _toggleOverflowAnchor: function() {
-                if (this.popup.element.children(":not(." + OVERFLOW_HIDDEN + ")").length > 0) {
+                if (this.popup.element.children(":not(." + OVERFLOW_HIDDEN + ", ." + POPUP + ")").length > 0) {
                     this.overflowAnchor.css({
                         visibility: "visible",
                         width: ""
@@ -723,7 +796,7 @@ var __meta__ = {
                     target = $(e.target).closest("." + OVERFLOW_BUTTON, that.popup.container);
                 }
 
-                isDisabled = target.hasClass(STATE_DISABLED);
+                isDisabled = target.hasClass(OVERFLOW_BUTTON) ? target.parent("li").hasClass(STATE_DISABLED) : target.hasClass(STATE_DISABLED);
 
                 if (isDisabled) {
                     return;
@@ -772,6 +845,10 @@ var __meta__ = {
 
                 e.preventDefault();
 
+                if (splitButton.hasClass(STATE_DISABLED)) {
+                    return;
+                }
+
                 if (popup.element.is(":visible")) {
                     isDefaultPrevented = this.trigger(CLOSE, { target: splitButton });
                 } else {
@@ -789,6 +866,10 @@ var __meta__ = {
 
             _resize: function(e) {
                 var containerWidth = e.width;
+
+                if (!this.options.resizable) {
+                    return;
+                }
 
                 this.popup.close();
 

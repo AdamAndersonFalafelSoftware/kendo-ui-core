@@ -80,6 +80,7 @@
         setTimeout(function() {
             start();
             equal(application.view().id, "/");
+            application.destroy();
         }, 400);
     });
 
@@ -170,6 +171,20 @@
 
         equal(location.hash, "#page2");
         equal(application.view().id, "#page2");
+    });
+
+    test("supports prevention of initial view", 2, function() {
+        window.check = function(e) {
+            e.preventDefault();
+            kendo.mobile.application.navigate("#test1");
+        }
+
+        setup('<div data-role="view" id="test1">Page 1</div><div data-role="view" id="page2" data-before-show="check">Page 2</div>', {
+            initial: "page2"
+        });
+
+        equal(location.hash, "#test1");
+        equal(application.view().id, "#test1");
     });
 
     test("Supports scope for view models", 1, function() {
@@ -300,12 +315,73 @@
         ok(application.element.hasClass("km-wp-light"));
     });
 
+    test("Setting skin variant without platform sets the variant classes", 2, function() {
+        setup('<div data-role="view" />', {
+            skin: "material-dark"
+        });
+
+        ok(application.element.hasClass("km-material"));
+        ok(application.element.hasClass("km-material-dark"));
+    });
+
     test("Setting the the platform variant sets at least one variant", 1, function() {
         setup('<div data-role="view" />', {
             platform: "wp"
         });
 
         ok(application.element.hasClass("km-wp-light") || application.element.hasClass("km-wp-dark"));
+    });
+
+    test("useNativeScrolling mode + platform: 'android' pads the content correctly", 1, function() {
+        setup('<div data-role="view"><div data-role="footer">Footer content</div>Content</div>', {
+            platform: "android",
+            useNativeScrolling: true
+        });
+
+        var contentElement = application.element.find("[data-role=content]"),
+            footerElement = application.element.find("[data-role=footer]");
+
+        equal(contentElement.css("padding-top"), footerElement.css("height"));
+    });
+
+    test("useNativeScrolling mode + skin: 'android' pads the content correctly", 1, function() {
+        setup('<div data-role="view"><div data-role="footer">Footer content</div>Content</div>', {
+            skin: "android-light",
+            useNativeScrolling: true
+        });
+
+        var contentElement = application.element.find("[data-role=content]"),
+            footerElement = application.element.find("[data-role=footer]");
+
+        equal(contentElement.css("padding-top"), footerElement.css("height"));
+    });
+
+    test("useNativeScrolling mode on android with skin: 'flat' pads the content correctly", 2, function() {
+        setup('<div data-role="view"><div data-role="footer">Footer content</div>Content</div>', {
+            platform: "android",
+            skin: "flat",
+            useNativeScrolling: true
+        });
+
+        var contentElement = application.element.find("[data-role=content]"),
+            footerElement = application.element.find("[data-role=footer]");
+
+        equal(contentElement.css("padding-top"), "0px");
+        equal(contentElement.css("padding-bottom"), footerElement.css("height"));
+    });
+
+    test("useNativeScrolling mode on android with skin: 'material' pads the content correctly", 2, function() {
+        setup('<div data-role="view"><div data-role="footer">Footer content</div>Content</div>', {
+            platform: "android",
+            skin: "material",
+            useNativeScrolling: true
+        });
+
+        var contentElement = application.element.find("[data-role=content]"),
+            footerElement = application.element.find("[data-role=footer]");
+
+        equal(contentElement.css("padding-top"), "0px");
+        equal(contentElement.css("padding-bottom"), footerElement.css("height"));
     });
 
     /*

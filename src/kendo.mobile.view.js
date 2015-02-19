@@ -13,6 +13,7 @@ var __meta__ = {
 
 (function($, undefined) {
     var kendo = window.kendo,
+        angular = window.angular,
         mobile = kendo.mobile,
         ui = mobile.ui,
         attr = kendo.attr,
@@ -31,7 +32,9 @@ var __meta__ = {
         DESTROY = "destroy",
         Z_INDEX = "z-index",
         attrValue = kendo.attrValue,
-        roleSelector = kendo.roleSelector;
+        roleSelector = kendo.roleSelector,
+        directiveSelector = kendo.directiveSelector,
+        compileMobileDirective = kendo.compileMobileDirective;
 
     function initPopOvers(element) {
         var popovers = element.find(roleSelector("popover")),
@@ -52,8 +55,6 @@ var __meta__ = {
     var View = Widget.extend({
         init: function(element, options) {
             Widget.fn.init.call(this, element, options);
-
-
             this.params = {};
 
             $.extend(this, options);
@@ -61,10 +62,15 @@ var __meta__ = {
             this.transition = this.transition || this.defaultTransition;
 
             this._id();
-            this._layout();
-            this._overlay();
-            this._scroller();
-            this._model();
+
+            if (!this.options.$angular) {
+                this._layout();
+                this._overlay();
+                this._scroller();
+                this._model();
+            } else {
+                this._overlay();
+            }
         },
 
         events: [
@@ -82,6 +88,8 @@ var __meta__ = {
         options: {
             name: "View",
             title: "",
+            layout: null,
+            getLayout: $.noop,
             reload: false,
             transition: "",
             defaultTransition: "",
@@ -113,12 +121,16 @@ var __meta__ = {
 
             this.trigger(DESTROY);
 
+
             Widget.fn.destroy.call(this);
 
             if (this.scroller) {
                 this.scroller.destroy();
             }
 
+            if (this.options.$angular) {
+                this.element.scope().$destroy();
+            }
 
             kendo.destroy(this.element);
         },
@@ -135,31 +147,37 @@ var __meta__ = {
             return true;
         },
 
+        triggerBeforeHide: function() {
+            if (this.trigger(BEFORE_HIDE, { view: this })) {
+                return false;
+            }
+            return true;
+        },
+
         showStart: function() {
-            var that = this;
-            that.element.css("display", "");
+            var element = this.element;
 
-            if (!that.inited) {
-                that.inited = true;
-                that.trigger(INIT, {view: that});
+            element.css("display", "");
+
+            if (!this.inited) {
+                this.inited = true;
+                this.trigger(INIT, {view: this});
+            } else { // skip the initial controller update
+                this._invokeNgController();
             }
 
-            if (that.layout) {
-                that.layout.attach(that);
+            if (this.layout) {
+                this.layout.attach(this);
             }
 
-            that._padIfNativeScrolling();
-            that.trigger(SHOW, {view: that});
-            kendo.resize(that.element);
+            this._padIfNativeScrolling();
+            this.trigger(SHOW, {view: this});
+            kendo.resize(element);
         },
 
         showEnd: function() {
             this.trigger(AFTER_SHOW, {view: this});
             this._padIfNativeScrolling();
-        },
-
-        hideStart: function() {
-            this.trigger(BEFORE_HIDE, {view: this});
         },
 
         hideEnd: function() {
@@ -183,8 +201,11 @@ var __meta__ = {
         _padIfNativeScrolling: function() {
             if (mobile.appLevelNativeScrolling()) {
                 var isAndroid = kendo.support.mobileOS && kendo.support.mobileOS.android,
-                    topContainer = isAndroid ? "footer" : "header",
-                    bottomContainer = isAndroid ? "header" : "footer";
+                    skin = mobile.application.skin() || "",
+                    isAndroidForced = mobile.application.os.android || (skin.indexOf("android") > -1),
+                    hasPlatformIndependentSkin = skin === "flat" || (skin.indexOf("material") > -1),
+                    topContainer = (isAndroid || isAndroidForced) && (!hasPlatformIndependentSkin) ? "footer" : "header",
+                    bottomContainer = (isAndroid || isAndroidForced) && (!hasPlatformIndependentSkin) ? "header" : "footer";
 
                 this.content.css({
                     paddingTop: this[topContainer].height(),
@@ -264,32 +285,57 @@ var __meta__ = {
         },
 
         _layout: function() {
-            var that = this,
-                contentSelector = roleSelector("content"),
-                element = that.element;
+            var contentSelector = roleSelector("content"),
+                element = this.element;
 
             element.addClass("km-view");
 
-            that.header = element.children(roleSelector("header")).addClass("km-header");
-            that.footer = element.children(roleSelector("footer")).addClass("km-footer");
+            this.header = element.children(roleSelector("header")).addClass("km-header");
+            this.footer = element.children(roleSelector("footer")).addClass("km-footer");
 
             if (!element.children(contentSelector)[0]) {
               element.wrapInner("<div " + attr("role") + '="content"></div>');
             }
 
-            that.content = element.children(roleSelector("content"))
+            this.content = element.children(roleSelector("content"))
                                 .addClass("km-content");
 
-            that.element.prepend(that.header).append(that.footer);
+            this.element.prepend(this.header).append(this.footer);
 
 
-            if (that.layout) {
-                that.layout.setup(that);
+            this.layout = this.options.getLayout(this.layout);
+
+            if (this.layout) {
+                this.layout.setup(this);
             }
         },
 
         _overlay: function() {
             this.overlay = $(UI_OVERLAY).appendTo(this.element);
+        },
+
+        _invokeNgController: function() {
+            var controller,
+                scope;
+
+            if (this.options.$angular) {
+                controller = this.element.controller();
+                scope = this.element.scope();
+
+                if (controller) {
+                    var callback = $.proxy(this, '_callController', controller, scope);
+
+                    if (/^\$(digest|apply)$/.test(scope.$$phase)) {
+                        callback();
+                    } else {
+                        scope.$apply(callback);
+                    }
+                }
+            }
+        },
+
+        _callController: function(controller, scope) {
+            this.element.injector().invoke(controller.constructor, controller, { $scope: scope });
         }
     });
 
@@ -301,24 +347,31 @@ var __meta__ = {
 
     var Layout = Widget.extend({
         init: function(element, options) {
-            var that = this;
-            Widget.fn.init.call(that, element, options);
+            Widget.fn.init.call(this, element, options);
 
-            element = that.element;
+            element = this.element;
 
-            that.header = element.children(roleSelector("header")).addClass("km-header");
-            that.footer = element.children(roleSelector("footer")).addClass("km-footer");
-            that.elements = that.header.add(that.footer);
+            this.header = element.children(this._locate("header")).addClass("km-header");
+            this.footer = element.children(this._locate("footer")).addClass("km-footer");
+            this.elements = this.header.add(this.footer);
 
             initPopOvers(element);
 
-            kendo.mobile.init(that.element.children());
-            that.element.detach();
-            that.trigger(INIT, {layout: that});
+            if (!this.options.$angular) {
+                kendo.mobile.init(this.element.children());
+            }
+            this.element.detach();
+            this.trigger(INIT, {layout: this});
+        },
+
+        _locate: function(selectors) {
+            return this.options.$angular ? directiveSelector(selectors) : roleSelector(selectors);
         },
 
         options: {
-            name: "Layout"
+            name: "Layout",
+            id: null,
+            platform: null
         },
 
         events: [
@@ -375,6 +428,7 @@ var __meta__ = {
         SHOW_START = "showStart",
         SAME_VIEW_REQUESTED = "sameViewRequested",
         VIEW_SHOW = "viewShow",
+        VIEW_TYPE_DETERMINED = "viewTypeDetermined",
         AFTER = "after";
 
     var ViewEngine = Observable.extend({
@@ -382,7 +436,8 @@ var __meta__ = {
             var that = this,
                 views,
                 errorMessage,
-                container;
+                container,
+                collection;
 
             Observable.fn.init.call(that);
 
@@ -418,10 +473,32 @@ var __meta__ = {
                 that.trigger(AFTER);
             });
 
+            this.getLayoutProxy = $.proxy(this, "_getLayout");
             that._setupLayouts(container);
 
-            initWidgets(container.children(roleSelector("modalview drawer")));
+            collection = container.children(that._locate("modalview drawer"));
+            if (that.$angular) {
+                collection.each(function(idx, element) {
+                    compileMobileDirective($(element), function(scope) {
+                        //pass the options?
+                    });
+                });
+            } else {
+                initWidgets(collection);
+            }
+
+            this.bind(this.events, options);
         },
+
+        events: [
+            SHOW_START,
+            AFTER,
+            VIEW_SHOW,
+            LOAD_START,
+            LOAD_COMPLETE,
+            SAME_VIEW_REQUESTED,
+            VIEW_TYPE_DETERMINED
+        ],
 
         destroy: function() {
             kendo.destroy(this.container);
@@ -441,7 +518,7 @@ var __meta__ = {
                 url = "/";
             }
 
-            if (url === this.url) {
+            if (url.replace(/^#/, "") === this.url) {
                 this.trigger(SAME_VIEW_REQUESTED);
                 return false;
             }
@@ -455,7 +532,8 @@ var __meta__ = {
                 element = that._findViewElement(url),
                 view = kendo.widgetInstance(element);
 
-            that.url = url;
+            that.url = url.replace(/^#/, "");
+
             that.params = params;
 
             if (view && view.reload) {
@@ -463,7 +541,7 @@ var __meta__ = {
                 element = [];
             }
 
-            this.trigger("viewTypeDetermined", { remote: element.length === 0, url: url });
+            this.trigger(VIEW_TYPE_DETERMINED, { remote: element.length === 0, url: url });
 
             if (element[0]) {
                 if (!view) {
@@ -472,16 +550,19 @@ var __meta__ = {
 
                 return showClosure(view);
             } else {
-                that._loadView(url, showClosure);
+                if (this.serverNavigation) {
+                    location.href = url;
+                } else {
+                    that._loadView(url, showClosure);
+                }
                 return true;
             }
         },
 
         append: function(html, url) {
-            var that = this,
-                sandbox = that.sandbox,
+            var sandbox = this.sandbox,
                 urlPath = (url || "").split("?")[0],
-                container = that.container,
+                container = this.container,
                 views,
                 modalViews,
                 view;
@@ -494,7 +575,7 @@ var __meta__ = {
 
             container.append(sandbox.children("script, style"));
 
-            views = that._hideViews(sandbox);
+            views = this._hideViews(sandbox);
             view = views.first();
 
             // Generic HTML content found as remote view - no remote view markers
@@ -506,18 +587,21 @@ var __meta__ = {
                 view.hide().attr(attr("url"), urlPath);
             }
 
-            that._setupLayouts(sandbox);
+            this._setupLayouts(sandbox);
 
-            modalViews = sandbox.children(roleSelector("modalview drawer"));
+            modalViews = sandbox.children(this._locate("modalview drawer"));
 
-            container.append(sandbox.children(roleSelector("layout modalview drawer")).add(views));
+            container.append(sandbox.children(this._locate("layout modalview drawer")).add(views));
 
             // Initialize the modalviews after they have been appended to the final container
             initWidgets(modalViews);
 
-            return that._createView(view);
+            return this._createView(view);
         },
 
+        _locate: function(selectors) {
+            return this.$angular ? directiveSelector(selectors) : roleSelector(selectors);
+        },
 
         _findViewElement: function(url) {
             var element,
@@ -538,71 +622,93 @@ var __meta__ = {
         },
 
         _createView: function(element) {
-            var that = this,
-                viewOptions,
-                layout = attrValue(element, "layout");
+            if (this.$angular) {
+                var that = this;
 
-            if (typeof layout === "undefined") {
-                layout = that.layout;
+                return compileMobileDirective(element, function(scope) {
+                    scope.viewOptions = {
+                        defaultTransition: that.transition,
+                        loader: that.loader,
+                        container: that.container,
+                        getLayout: that.getLayoutProxy
+                    };
+                });
+            } else {
+                return kendo.initWidget(element, {
+                    defaultTransition: this.transition,
+                    loader: this.loader,
+                    container: this.container,
+                    getLayout: this.getLayoutProxy,
+                    modelScope: this.modelScope,
+                    reload: attrValue(element, "reload")
+                }, ui.roles);
+            }
+        },
+
+        _getLayout: function(name) {
+            if (name === "") {
+                return null;
             }
 
-            if (layout) {
-                layout = that.layouts[layout];
-            }
-
-            viewOptions = {
-                defaultTransition: that.transition,
-                loader: that.loader,
-                container: that.container,
-                layout: layout,
-                modelScope: that.modelScope,
-                reload: attrValue(element, "reload")
-            };
-
-            return kendo.initWidget(element, viewOptions, ui.roles);
+            return name ? this.layouts[name] : this.layouts[this.layout];
         },
 
         _loadView: function(url, callback) {
-            var that = this;
-
-            if (this.serverNavigation) {
-                location.href = url;
-                return;
+            if (this._xhr) {
+                this._xhr.abort();
             }
 
-            if (that._xhr) {
-                that._xhr.abort();
+            this.trigger(LOAD_START);
+
+            this._xhr = $.get(kendo.absoluteURL(url, this.remoteViewURLPrefix), "html")
+                .always($.proxy(this, "_xhrComplete", callback, url));
+        },
+
+        _xhrComplete: function(callback, url, response, status, err) {
+            var success = true;
+
+            if (typeof response === "object") {
+                if (response.status === 0) {
+                    if (response.responseText && response.responseText.length > 0) {
+                        success = true;
+                        response = response.responseText;
+                    } else { // request has been aborted for real
+                        return;
+                    }
+                }
             }
 
-            that.trigger(LOAD_START);
+            this.trigger(LOAD_COMPLETE);
 
-            that._xhr = $.get(kendo.absoluteURL(url, that.remoteViewURLPrefix), function(html) {
-                            that.trigger(LOAD_COMPLETE);
-                            callback(that.append(html, url));
-                        }, 'html')
-                        .fail(function(request) {
-                            that.trigger(LOAD_COMPLETE);
-                            if (request.status === 0 && request.responseText) {
-                                callback(that.append(request.responseText, url));
-                            }
-                        });
+            if (success) {
+                callback(this.append(response, url));
+            }
         },
 
         _hideViews: function(container) {
-            return container.children(roleSelector("view splitview")).hide();
+            return container.children(this._locate("view splitview")).hide();
         },
 
         _setupLayouts: function(element) {
-            var that = this;
+            var that = this,
+                layout;
 
-            element.children(roleSelector("layout")).each(function() {
-                var layout = $(this),
-                    platform = attrValue(layout,  "platform");
+            element.children(that._locate("layout")).each(function() {
+                if (that.$angular) {
+                    layout = compileMobileDirective($(this));
+                } else {
+                    layout = kendo.initWidget($(this), {}, ui.roles);
+                }
 
-                if (platform === undefined || platform === mobile.application.os.name) {
-                    that.layouts[kendo.attrValue(layout, "id")] = kendo.initWidget(layout, {}, ui.roles);
+                var platform = layout.options.platform;
+
+                if (!platform || platform === mobile.application.os.name) {
+                    that.layouts[layout.options.id] = layout;
+                } else {
+                    layout.destroy();
                 }
             });
+
         }
     });
 

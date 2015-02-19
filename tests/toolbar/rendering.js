@@ -470,6 +470,28 @@
         equal(button.prop("tagName"), "BUTTON", "<button> tag is rendered");
     });
 
+    test("options.attributes are attached to the button element", 1, function() {
+        var toolbar = container.kendoToolBar({
+            items: [
+                { type: "button", id: "foo", text: "foo", attributes: { "class": "foo" } }
+            ]
+        }).data("kendoToolBar");
+
+        var button = toolbar.element.find("#foo");
+        ok(button.hasClass("foo"));
+    });
+
+    test("options.attributes are attached to the button element located in the overflow popup", 1, function() {
+        var toolbar = container.kendoToolBar({
+            items: [
+                { type: "button", id: "foo", text: "foo", attributes: { "class": "foo" } }
+            ]
+        }).data("kendoToolBar");
+
+        var button = toolbar.popup.element.find("#foo_overflow");
+        ok(button.hasClass("foo"));
+    });
+
     /* TOGGLE BUTTON */
 
     test("toggleButton has k-toggle-button class", 2, function() {
@@ -715,6 +737,67 @@
         }
     });
 
+    test("options.attributes (button level) are attached to each button", 3, function() {
+        var toolbar = container.kendoToolBar({
+            items: [
+                { type: "buttonGroup", buttons: [
+                        { id: "btn1", text: "Btn1", attributes: { "class": "foo" } },
+                        { id: "btn2", text: "Btn2", attributes: { "class": "bar" } },
+                        { id: "btn3", text: "Btn3", attributes: { "class": "baz" } }
+                    ]
+                }
+            ]
+        }).data("kendoToolBar");
+
+        ok($("#btn1").hasClass("foo"));
+        ok($("#btn2").hasClass("bar"));
+        ok($("#btn3").hasClass("baz"));
+    });
+
+    test("options.attributes (buttonGroup level) are attached to the buttonGroup wrapper", 1, function() {
+        var toolbar = container.kendoToolBar({
+            items: [
+                { type: "buttonGroup", attributes: { "class": "foo" }, buttons: [
+                        { id: "btn1", text: "Btn1" },
+                        { id: "btn2", text: "Btn2" },
+                        { id: "btn3", text: "Btn3" }
+                    ]
+                }
+            ]
+        }).data("kendoToolBar");
+
+        var buttonGroup = toolbar.element.find(".k-button-group");
+        ok(buttonGroup.hasClass("foo"));
+    });
+
+    test("options.attributes (buttonGroup level) are attached to the buttonGroup wrapper located in the overflow popup", 1, function() {
+        var toolbar = container.kendoToolBar({
+            items: [
+                { type: "buttonGroup", attributes: { "class": "foo" }, buttons: [
+                        { id: "btn1", text: "Btn1" },
+                        { id: "btn2", text: "Btn2" },
+                        { id: "btn3", text: "Btn3" }
+                    ]
+                }
+            ]
+        }).data("kendoToolBar");
+
+        var buttonGroup = toolbar.popup.element.find(".k-button-group");
+        ok(buttonGroup.hasClass("foo"));
+    });
+
+    test("ButtonGroup with no buttons does not throw JS error", 0, function() {
+        try {
+            var toolbar = container.kendoToolBar({
+                items: [
+                    { type: "buttonGroup" }
+                ]
+            }).data("kendoToolBar");
+        } catch (e) {
+            ok(false);
+        }
+    });
+
     /* SPLIT BUTTON */
 
     test("renders splitButton from JSON", 2, function() {
@@ -919,6 +1002,38 @@
         equal(splitButton.outerWidth(), splitButton.data("kendoPopup").element.outerWidth());
     });
 
+    test("options.attribute are attached to the main button", 1, function() {
+        var splitButton = container.kendoToolBar({
+            items: [
+                { type: "splitButton", id: "foo", text: "foo", attributes: { "class": "foo" }, menuButtons: [
+                        { id: "btn1", text: "Btn1" },
+                        { id: "btn2", text: "Btn2" },
+                        { id: "btn3", text: "Btn3" }
+                    ]
+                }
+            ]
+        }).data("kendoToolBar");
+
+        ok($("#foo").hasClass("foo"));
+    });
+
+    test("options.attribute are attached to the menu buttons", 3, function() {
+        var splitButton = container.kendoToolBar({
+            items: [
+                { type: "splitButton", id: "foo", text: "foo", menuButtons: [
+                        { id: "btn1", text: "Btn1", attributes: { "class": "foo" } },
+                        { id: "btn2", text: "Btn2", attributes: { "class": "bar" } },
+                        { id: "btn3", text: "Btn3", attributes: { "class": "baz" } }
+                    ]
+                }
+            ]
+        }).data("kendoToolBar");
+
+        ok($("#btn1").hasClass("foo"));
+        ok($("#btn2").hasClass("bar"));
+        ok($("#btn3").hasClass("baz"));
+    });
+
     /* SEPARATOR */
 
     test("renders separator from JSON", 1, function() {
@@ -942,6 +1057,26 @@
 
         equal(separator.prop("tagName"), "LI");
         ok(separator.data("uid"));
+    });
+
+    test("options.attributes are attached to the separator element", 1, function() {
+        container.kendoToolBar({
+            items: [
+                { type: "separator", attributes: { "class": "foo" } }
+            ]
+        });
+
+        ok(container.children(".k-separator").hasClass("foo"));
+    });
+
+    test("options.id is attached to the separator element", 1, function() {
+        container.kendoToolBar({
+            items: [
+                { type: "separator", id: "foo" }
+            ]
+        });
+
+        equal(container.children("#foo").length, 1);
     });
 
     /* COMMAND OVERFLOW */
@@ -1063,6 +1198,30 @@
         }).data("kendoToolBar");
 
         ok($("#template").parent().data("uid"));
+    });
+
+    /* TEMPLATES */
+
+    test("attributes are applied to the wrapper element", 2, function() {
+        var toolbar = container.kendoToolBar({
+            items: [
+                { template: '<span id="template"></span>', attributes: { "class": "foo", "data-test": "test" } }
+            ]
+        }).data("kendoToolBar");
+
+        ok($("#template").parent().hasClass("foo"));
+        equal($("#template").parent().data("test"), "test");
+    });
+
+    test("id is applied to the wrapper element", 2, function() {
+        var toolbar = container.kendoToolBar({
+            items: [
+                { template: '<span id="template"></span>', id: "foo", attributes: { "class": "foo" } }
+            ]
+        }).data("kendoToolBar");
+
+        ok($("#foo").length);
+        ok($("#foo").hasClass("foo"));
     });
 
 })();

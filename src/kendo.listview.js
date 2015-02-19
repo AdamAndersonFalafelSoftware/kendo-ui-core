@@ -200,9 +200,18 @@ var __meta__ = {
 
                     if (item.length > 0) {
                         idx = item.index();
+
+                        that.angular("cleanup", function() {
+                            return { elements: [ item ]};
+                        });
+
                         item.replaceWith(template(data));
                         item = that.items().eq(idx);
                         item.attr(kendo.attr("uid"), data.uid);
+
+                        that.angular("compile", function() {
+                            return { elements: [ item ], data: [ { dataItem: data } ]};
+                        });
 
                         that.trigger("itemChange", {
                             item: item,
@@ -273,11 +282,7 @@ var __meta__ = {
                 navigatable = that.options.navigatable;
 
             if (selectable) {
-                multi = typeof selectable === STRING && selectable.toLowerCase().indexOf("multiple") > -1;
-
-                if (multi) {
-                    that.element.attr("aria-multiselectable", true);
-                }
+                multi = kendo.ui.Selectable.parseOptions(selectable).multiple;
 
                 that.selectable = new kendo.ui.Selectable(that.element, {
                     aria: true,
@@ -516,6 +521,7 @@ var __meta__ = {
            var that = this,
                editable = that.editable,
                data,
+               item,
                index,
                template = that.template,
                valid = true;
@@ -535,7 +541,12 @@ var __meta__ = {
 
                    index = editable.element.index();
                    editable.element.replaceWith(template(data));
-                   that.items().eq(index).attr(kendo.attr("uid"), data.uid);
+                   item = that.items().eq(index);
+                   item.attr(kendo.attr("uid"), data.uid);
+
+                   if (that._hasBindingTarget()) {
+                        kendo.bind(item, data);
+                   }
                }
            }
 

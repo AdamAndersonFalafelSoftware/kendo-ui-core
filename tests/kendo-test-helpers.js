@@ -41,13 +41,14 @@ function spy(that, methods) {
     if (!arguments.length) {
         var callback = function() {
             if (!callback.calls) {
-                callback.calls = 0;
                 callback.args = [];
             }
 
             callback.calls++;
             callback.args.push(Array.prototype.splice.call(arguments));
         };
+
+        callback.calls = 0;
 
         return callback;
     }
@@ -241,4 +242,134 @@ QUnit.config.testTimeout = 2500;
 QUnit.config.reorder = false;
 
 var close = QUnit.close,
-    notClose = QUnit.notClose;
+    notClose = QUnit.notClose,
+    contains = QUnit.contains;
+
+function withAngularTests(moduleName, func) {
+    if (!('angular' in window)) {
+        return;
+    }
+
+    var $injector, $controller, $scope, $compile;
+
+    module(moduleName, {
+        setup: function() {
+            $injector = angular.injector([ "ng", "MyApp" ]);
+            $scope = $injector.get("$rootScope").$new();
+            $controller = $injector.get("$controller")("MyCtrl", { $scope: $scope });
+            $compile = $injector.get("$compile");
+        },
+        teardown: function() {
+            $scope.$destroy();
+            kendo.destroy(QUnit.fixture);
+        }
+    });
+
+    angular.module("my.directives", []).directive("isolatedScope", function(){
+        return {
+            scope: {
+                "foo": "@"
+            },
+            restrict: "A",
+            transclude: true,
+            template: "<div><h1>Isolated Scope</h1><span ng-transclude></span></div>"
+        };
+    });
+
+    var app = angular.module("MyApp", [ "kendo.directives", "my.directives", "ngRoute" ]);
+    app.controller("MyCtrl", function($scope){
+        $scope.windowOptions = {
+            title: "Das titlen"
+        };
+        $scope.data = new kendo.data.ObservableArray([
+            { text: "Foo", id: 1 },
+            { text: "Bar", id: 2 }
+        ]);
+        $scope.hello = "Hello World!";
+        $scope.whenRendered = function(f) {
+            var off = $scope.$on("kendoRendered", function(){
+                off();
+                f.apply(null, arguments);
+            });
+        };
+    });
+
+    $.mockjaxSettings.responseTime = 0;
+
+    $.mockjax({
+        url: "ajax-template.html",
+        response: function() {
+            this.responseText = '<div>{{ hello }}</div>';
+        }
+    });
+
+    $.mockjax({
+        url: "data.json",
+        response: function() {
+            this.responseText = JSON.stringify({
+                user: {
+                    firstName: "John",
+                    lastName: "Doe"
+                }
+            });
+        }
+    });
+
+    function runTest(name, test){
+        asyncTest(name, function(){
+            var dom = $("<div></div>").appendTo(QUnit.fixture);
+            test(dom, $scope);
+            $compile(dom)($scope);
+        });
+    };
+
+    func(runTest);
+
+}
+
+var ngTestModule = $.noop, ngTest = $.noop, ngScope;
+
+(function() {
+    if (!('angular' in window)) {
+        return;
+    }
+
+    var $injector, $scope, $compile;
+
+    ngScope = function() {
+        return angular.element(QUnit.fixture.children()[0]).scope();
+    }
+
+    var app = angular.module('kendo.tests', [ 'kendo.directives' ]);
+
+    ngTestModule = function(name, config) {
+        if (!config) {
+            config = {};
+        }
+
+        var setup = config.setup || $.noop;
+        var teardown = config.teardown || $.noop;
+
+        config.setup = function() {
+            setup();
+        }
+
+        config.teardown = function() {
+            teardown();
+            kendo.destroy(QUnit.fixture);
+        }
+
+        module(name, config);
+    }
+
+    ngTest = function(name, assertions, setup, check) {
+        asyncTest(name, assertions, function() {
+            setup();
+            angular.bootstrap(QUnit.fixture.children()[0], [ 'kendo.tests' ]);
+            setTimeout(function() {
+                start();
+                check();
+            }, 100);
+        });
+    }
+})();

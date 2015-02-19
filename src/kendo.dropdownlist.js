@@ -139,6 +139,7 @@ var __meta__ = {
             "close",
             CHANGE,
             "select",
+            "filtering",
             "dataBinding",
             "dataBound",
             "cascade"
@@ -356,7 +357,7 @@ var __meta__ = {
         },
 
         _wrapperMousedown: function() {
-            this._prevent = true;
+            this._prevent = !!this.filterInput;
         },
 
         _wrapperClick: function(e) {
@@ -786,11 +787,6 @@ var __meta__ = {
             }
         },
 
-        _iconMousedown: function(e) {
-            this.wrapper.focus();
-            e.preventDefault();
-        },
-
         _span: function() {
             var that = this,
                 wrapper = that.wrapper,
@@ -808,8 +804,7 @@ var __meta__ = {
 
             that.span = span;
             that._inputWrapper = $(wrapper[0].firstChild);
-            that._arrow = wrapper.find(".k-icon")
-                                 .mousedown(proxy(that._iconMousedown, that));
+            that._arrow = wrapper.find(".k-icon");
         },
 
         _wrapper: function() {

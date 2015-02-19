@@ -875,7 +875,7 @@ test("range data is same as the range if remote paging is enabled", function() {
     var dataSource = remoteDataSource();
     dataSource.read();
     dataSource.range(30,16);
-    deepEqual(dataSource.data(), dataSource.view());
+    equal(dataSource.data().length, dataSource.view().length);
 });
 
 test("getByUid returns the item after remote range from a diffrent page is retrieved", function() {
@@ -966,6 +966,62 @@ test("range with server grouping ranges are not modfied", function() {
     dataSource.read();
     dataSource.range(6, 20);
     equal(dataSource._flatData(dataSource._ranges[0].data).length, 20);
+});
+
+function groupedData(options) {
+    var groupsDict = {};
+    var groups = [];
+
+    for (var i = options.skip, len = options.skip + options.take; i < len; i++) {
+        var key = Math.floor(i / 30) * 30;
+        var group;
+
+        if (!groupsDict[key]) {
+            groupsDict[key] = {
+                field: "number",
+                items: [],
+                hasSubgroups: false,
+                value: key + " - " + (key + 30)
+            }
+
+            groups.push(groupsDict[key]);
+        }
+
+        groupsDict[key].items.push({
+            id: i,
+            text: " Item " + i
+        });
+    }
+
+    return groups;
+}
+
+test("view returns observable items when range changes and dataSource has server grouping", function() {
+    var totalCount = 47,
+        dataSource = new DataSource({
+            pageSize: 20,
+            serverPaging: true,
+            group: "foo",
+            serverGrouping: true,
+            transport: {
+                read: function(options) {
+                    options.success({ groups: groupedData(options.data), hasSubgroups: false, total: totalCount });
+                }
+            },
+            schema: {
+                data: "data",
+                groups: "groups",
+                total: "total"
+            }
+        });
+
+    dataSource.read();
+    dataSource.range(6, 20);
+    dataSource.range(20, 40);
+    var view = dataSource.view();
+
+    ok(view[0] instanceof kendo.data.ObservableObject, "groups are observable objects");
+    ok(view[0].items[0] instanceof kendo.data.ObservableObject, "group.items contains observable objects");
 });
 
 test("mergeGroup returns a subset of the data", function() {
@@ -1421,6 +1477,119 @@ test("grand total aggregates are calculated with local data", function() {
 
     equal(dataSource.aggregates().bar.count, 2);
 });
+
+test("range is reverted when calling cancel changes", function() {
+    var totalCount = 47,
+        dataSource = new DataSource({
+            pageSize: 20,
+            serverPaging: true,
+            transport: {
+                read: function(options) {
+                    var take = options.data.take,
+                    skip = options.data.skip;
+
+                    var data = [];
+
+                    for (var i = skip; i < Math.min(skip + take, totalCount); i++) {
+                        data.push({ OrderID: i, ContactName: "Contact " + i, ShipAddress: "Ship Address " + i });
+                    }
+                    options.success({ data: data, total: totalCount });
+                }
+            },
+            schema: {
+                model: {
+                    id: "OrderID"
+                },
+                data: "data",
+                total: "total"
+            }
+        });
+
+    dataSource.read();
+    dataSource.range(10, 20);
+
+    var model = dataSource.get(10);
+    model.set("ShipAddress", "fooo");
+
+    dataSource.cancelChanges();
+
+    dataSource.range(10, 20);
+
+    model = dataSource.get(10);
+
+    equal(model.get("ShipAddress"), "Ship Address 10");
+});
+
+test("models within the range have correct parent - local paging", function() {
+    var totalCount = 47,
+        dataSource = new DataSource({
+            pageSize: 20,
+    //        serverPaging: true,
+            transport: {
+                read: function(options) {
+                    var take = options.data.take || totalCount,
+                        skip = options.data.skip || 0;
+
+                    var data = [];
+
+                    for (var i = skip; i < Math.min(skip + take, totalCount); i++) {
+                        data.push({ OrderID: i, ContactName: "Contact " + i, ShipAddress: "Ship Address " + i });
+                    }
+                    options.success({ data: data, total: totalCount });
+                }
+            },
+            schema: {
+                model: {
+                    id: "OrderID"
+                },
+                data: "data",
+                total: "total"
+            }
+        });
+
+    dataSource.read();
+
+    dataSource.range(10, 20);
+    dataSource.range(12, 20);
+
+    deepEqual(dataSource.view()[0].parent(), dataSource.data());
+});
+
+test("models within the range have correct parent - server paging", function() {
+    var totalCount = 47,
+        dataSource = new DataSource({
+            pageSize: 20,
+            serverPaging: true,
+            transport: {
+                read: function(options) {
+                    var take = options.data.take,
+                        skip = options.data.skip;
+
+                    var data = [];
+
+                    for (var i = skip; i < Math.min(skip + take, totalCount); i++) {
+                        data.push({ OrderID: i, ContactName: "Contact " + i, ShipAddress: "Ship Address " + i });
+                    }
+                    options.success({ data: data, total: totalCount });
+                }
+            },
+            schema: {
+                model: {
+                    id: "OrderID"
+                },
+                data: "data",
+                total: "total"
+            }
+        });
+
+    dataSource.read();
+
+    dataSource.range(10, 20);
+    dataSource.range(12, 20);
+
+    deepEqual(dataSource.view()[0].parent(), dataSource.data());
+});
+
 
 /*test("ranges are updated when model is added after range is called - with local binding", function() {
     var totalCount = 47,

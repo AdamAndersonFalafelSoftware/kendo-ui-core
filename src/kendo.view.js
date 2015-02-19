@@ -77,14 +77,15 @@ var __meta__ = {
             return true;
         },
 
+        triggerBeforeHide: function() {
+            return true;
+        },
+
         showStart: function() {
             this.element.css("display", "");
         },
 
         showEnd: function() {
-        },
-
-        hideStart: function() {
         },
 
         hideEnd: function() {
@@ -160,6 +161,9 @@ var __meta__ = {
                 }
             } else {
                 element = content;
+                if (that._evalTemplate) {
+                    element.html(kendo.template(element.html())(that.model || {}));
+                }
                 if (that._wrap) {
                     element = element.wrapAll(wrapper).parent();
                 }
@@ -179,8 +183,6 @@ var __meta__ = {
 
             view.element.parent().append(this.element);
         },
-
-        hideStart: $.noop,
 
         hideEnd: function() {
             this.element.remove();
@@ -282,7 +284,7 @@ var __meta__ = {
         },
 
         show: function(view, transition, locationID) {
-            if (!view.triggerBeforeShow()) {
+            if (!view.triggerBeforeShow() || (this.view && !this.view.triggerBeforeHide())) {
                 this.trigger("after");
                 return false;
             }
@@ -324,8 +326,6 @@ var __meta__ = {
                 that.after();
                 return true;
             }
-
-            current.hideStart();
 
             if (!theTransition || !kendo.effects.enabled) {
                 view.showStart();

@@ -76,6 +76,8 @@ var __meta__ = {
 
             that._sliderItemsInit();
 
+            that._reset();
+
             that._tabindex(that.wrapper.find(DRAG_HANDLE));
             that[options.enabled ? "enable" : "disable"]();
 
@@ -218,7 +220,8 @@ var __meta__ = {
                 for (i = 0; i < items.length; i++) {
                     item = $(items[i]);
                     value = that._values[i];
-                    if (removeFraction(value) % removeFraction(options.smallStep) === 0 && removeFraction(value) % removeFraction(options.largeStep) === 0) {
+                    var valueWithoutFraction = round(removeFraction(value - this.options.min));
+                    if (valueWithoutFraction % removeFraction(options.smallStep) === 0 && valueWithoutFraction % removeFraction(options.largeStep) === 0) {
                         item.addClass("k-tick-large")
                             .html("<span class='k-label'>" + item.attr("title") + "</span>");
 
@@ -422,10 +425,10 @@ var __meta__ = {
                 inputs = element.find("input");
 
             if (inputs.length == 2) {
-                inputs.eq(0).val(options.selectionStart);
-                inputs.eq(1).val(options.selectionEnd);
+                inputs.eq(0).prop("value", formatValue(options.selectionStart));
+                inputs.eq(1).prop("value", formatValue(options.selectionEnd));
             } else {
-                element.val(options.value);
+                element.prop("value", formatValue(options.value));
             }
 
             element.wrap(createWrapper(options, element, that._isHorizontal)).hide();
@@ -510,6 +513,24 @@ var __meta__ = {
             if (drag && drag.tooltipDiv) {
                 drag.tooltipDiv.stop(true, false).css("opacity", 1);
             }
+        },
+
+        _reset: function () {
+            var that = this,
+                element = that.element,
+                formId = element.attr("form"),
+                form = formId ? $("#" + formId) : element.closest("form");
+
+            if (form[0]) {
+                that._form = form.on("reset", proxy(that._formResetHandler, that));
+            }
+        },
+
+        destroy: function () {
+            if (this._form) {
+                this._form.off("reset", this._formResetHandler);
+            }
+            Widget.fn.destroy.call(this);
         }
     });
 
@@ -630,7 +651,7 @@ var __meta__ = {
             options = that.options;
             if (!defined(options.value) || options.value === null) {
                 options.value = options.min;
-                element.val(options.min);
+                element.prop("value", formatValue(options.min));
             }
             options.value = math.max(math.min(options.value, options.max), options.min);
 
@@ -888,10 +909,20 @@ var __meta__ = {
             return this._values[math.max(0, math.min(index, count - 1))];
         },
 
+        _formResetHandler: function () {
+            var that = this,
+                min = that.options.min;
+
+            setTimeout(function () {
+                var value = that.element[0].value;
+                that.value(value === "" || isNaN(value) ? min : value);
+            });
+        },
+
         destroy: function() {
             var that = this;
 
-            Widget.fn.destroy.call(that);
+            SliderBase.fn.destroy.call(that);
 
             that.wrapper.off(NS)
                 .find(".k-button").off(NS)
@@ -1288,12 +1319,12 @@ var __meta__ = {
             options = that.options;
             if (!defined(options.selectionStart) || options.selectionStart === null) {
                 options.selectionStart = options.min;
-                inputs.eq(0).val(options.min);
+                inputs.eq(0).prop("value", formatValue(options.min));
             }
 
             if (!defined(options.selectionEnd) || options.selectionEnd === null) {
                 options.selectionEnd = options.max;
-                inputs.eq(1).val(options.max);
+                inputs.eq(1).prop("value", formatValue(options.max));
             }
 
             var dragHandles = that.wrapper.find(DRAG_HANDLE);
@@ -1589,10 +1620,22 @@ var __meta__ = {
             });
         },
 
+        _formResetHandler: function () {
+            var that = this,
+                options = that.options;
+
+            setTimeout(function () {
+                var inputs = that.element.find("input");
+                var start = inputs[0].value;
+                var end = inputs[1].value;
+                that.values(start === "" || isNaN(start) ? options.min : start, end === "" || isNaN(end) ? options.max : end);
+            });
+        },
+
         destroy: function() {
             var that = this;
 
-            Widget.fn.destroy.call(that);
+            SliderBase.fn.destroy.call(that);
 
             that.wrapper.off(NS)
                 .find(TICK_SELECTOR + ", " + TRACK_SELECTOR).off(NS)

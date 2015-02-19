@@ -37,7 +37,19 @@
         equal(titleElement.text(), oldTitle);
     });
 
-    test("open of modal window adds overlay if it does not exist", function() {
+    test("title method and title property set once encoded string as once encoded", 2, function () {
+        var encodedString = kendo.htmlEncode("<script>var foo1 = 1;<\/script>"),
+            window = createWindow({ title: encodedString }),
+            titleElement = $(".k-window-title", window.wrapper);
+
+        equal(titleElement.html(), encodedString);
+
+        window.title(encodedString);
+
+        equal(titleElement.html(), encodedString);
+    });
+
+    test("open of modal window adds overlay if it does not exist", function () {
         createWindow({ modal: true }).open();
 
         equal($("body > .k-overlay").length, 1);
@@ -336,7 +348,7 @@
 
         dialog.content("bar");
 
-        equal($(".k-popup").length, 0);
+        ok(!ddl.data("kendoDropDownList"));
     });
 
     test("toFront() raises window z-index above other windows", function() {
@@ -875,5 +887,15 @@
 
         dialog.close();
         secondDialog.open();
+    });
+
+    test("setOptions allows changing of window actions", function() {
+        var dialog = createWindow();
+
+        dialog.setOptions({
+            actions: [ "Minimize", "Close" ]
+        });
+
+        equal(dialog.wrapper.find(".k-i-minimize").length, 1);
     });
 })();

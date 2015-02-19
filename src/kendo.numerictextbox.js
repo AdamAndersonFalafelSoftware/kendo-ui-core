@@ -69,9 +69,7 @@ var __meta__ = {
              } else {
                  that._text.on(TOUCHEND + ns + " " + FOCUS + ns, function(e) {
                     that._toggleText(false);
-                    if (e.type === FOCUS) {
-                        element.focus();
-                    }
+                    element.focus();
                  });
              }
 
@@ -351,10 +349,11 @@ var __meta__ = {
 
             if (that._old != value) {
                 that._old = value;
-                that.trigger(CHANGE);
 
                 // trigger the DOM change event so any subscriber gets notified
                 that.element.trigger(CHANGE);
+
+                that.trigger(CHANGE);
             }
         },
 
@@ -439,7 +438,7 @@ var __meta__ = {
         },
 
         _keypress: function(e) {
-            if (e.which === 0 || e.ctrlKey || e.keyCode === keys.BACKSPACE || e.keyCode === keys.ENTER) {
+            if (e.which === 0 || e.metaKey || e.ctrlKey || e.keyCode === keys.BACKSPACE || e.keyCode === keys.ENTER) {
                 return;
             }
 

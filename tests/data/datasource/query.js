@@ -67,6 +67,7 @@ test("query sets sort", function() {
     ok($.isArray(dataSource.sort()));
     equal(dataSource.sort()[0].field, "foo");
     equal(dataSource.sort()[0].dir, "asc");
+
 });
 
 test("query sets custom comparer", function() {
@@ -1044,6 +1045,8 @@ test("query should filter if filter is set", function() {
     var view = dataSource.view();
     equal(view.length, 1);
     equal(view[0].bar, "baz");
+
+    ok(dataSource.view()[0] instanceof kendo.data.ObservableObject);
 });
 
 test("filter first page is shown", function() {
@@ -1676,6 +1679,56 @@ test("fetch calls supplied callback only once on multiple fetches", function() {
     equal(called, 1);
 });
 
+test("fetch callback is called with dataSource context", function() {
+    var dataSource = new DataSource({
+        data: [{foo: 1, bar: "1"}]
+    });
+
+    dataSource.fetch(function() {
+        equal(this, dataSource);
+    });
+});
+
+test("fetch callback is not called when requestStart is prevented", function() {
+    var wasCalled = false,
+        dataSource = new DataSource({
+            data: [{foo: 1, bar: "1"}]
+        });
+
+    dataSource.read();
+
+    dataSource.one("requestStart", function(e) {
+        e.preventDefault();
+    });
+
+    dataSource.fetch(function() {
+        wasCalled = true;
+    });
+
+    ok(!wasCalled, "fetch callback was executed");
+});
+
+test("fetch callback is not called when requestStart is prevented with remote operations", function() {
+    var wasCalled = false,
+        dataSource = new DataSource({
+            transport: {
+                read: function(options) {
+                    options.success([{foo: 1, bar: "1"}]);
+                }
+            }
+        });
+
+    dataSource.one("requestStart", function(e) {
+        e.preventDefault();
+    });
+
+    dataSource.fetch(function() {
+        wasCalled = true;
+    });
+
+    ok(!wasCalled, "fetch callback was executed");
+});
+
 test("paging with custom schema", function() {
     var dataSource = new DataSource({
         transport:  {
@@ -2054,4 +2107,62 @@ asyncTest("custom transport fails the promess when the error method is called", 
         ok(true);
     });
 });
+
+test("query returns promise for remote operations", function() {
+    var dataSource = new DataSource({
+        transport: {
+            read: function(options) {
+                options.success([]);
+            }
+        },
+        serverSorting: true
+    });
+
+    ok($.isFunction(dataSource.query().then));
+});
+
+test("query returns promise for local operations", function() {
+    var dataSource = new DataSource({
+        data: [
+            { id: 1 }
+        ]
+    });
+
+    dataSource.read();
+
+    ok($.isFunction(dataSource.query().then));
+});
+
+test("query resolves promise after data has been processed", function() {
+    var dataSource = new DataSource({
+        data: [
+            { id: 1 }
+        ]
+    });
+
+    dataSource.read();
+
+    dataSource.query()
+        .then(function() {
+            ok(true);
+        });
+});
+
+test("query resolves promise when requestStart is prevented", function() {
+    var dataSource = new DataSource({
+        data: [
+            { id: 1 }
+        ]
+    });
+
+    dataSource.read();
+
+    dataSource.bind("requestStart", function(e) { e.preventDefault(); });
+
+    dataSource.query()
+        .then(function() {
+            ok(true);
+        });
+});
+
 }());

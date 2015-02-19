@@ -79,7 +79,9 @@ var __meta__ = {
 
         _click: function(e) {
             if (this.options.enable) {
-                this.trigger(CLICK, {event: e});
+                if (this.trigger(CLICK, { event: e })) {
+                    e.preventDefault();
+                }
             }
         },
 
@@ -171,7 +173,11 @@ var __meta__ = {
             element.toggleClass(DISABLEDSTATE, !enable)
                    .attr("aria-disabled", !enable)
                    .attr(DISABLED, !enable);
-            element.blur();
+            // prevent 'Unspecified error' in IE when inside iframe
+            try {
+                element.blur();
+            } catch (err) {
+            }
         }
     });
 

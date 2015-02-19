@@ -1,4 +1,6 @@
-﻿var Slider = kendo.ui.Slider;
+﻿(function(){
+
+var Slider = kendo.ui.Slider;
 var input;
 var isDefaultPrevent;
 
@@ -289,13 +291,57 @@ test("slider should render large ticks instead of small ticks", function () {
     var slider = newSlider({ smallStep: 1, largeStep: 1 }, $("<input />"));
     slider.wrapper.find(".k-tick-large").each(function() {
         ok($(this).hasClass("k-tick-large"));
-    })
+    });
 });
 
-test("slider should render ", function () {
+test("slider should render a small last tick", function () {
     var slider = newSlider({ max: 23 }, $("<input />"));
     var lastLargeTick = slider.wrapper.find(".k-tick-large span:last");
     equal(lastLargeTick.html(), 20);
     var lastSmallTick = slider.wrapper.find(".k-tick:last");
     equal(lastSmallTick.attr("title"), 23);
 });
+
+test("slider should not modify input value with bg-BG culture", function () {
+    kendo.culture("bg-BG");
+    var slider = newSlider({}, $("<input value='5,5' />"));
+    equal(slider.element.val(), "5,5");
+    kendo.culture("en-US");
+});
+
+test("slider should render large ticks with min value bigger then 0 correctly", 3, function () {
+    var slider = newSlider({ min: 1900, smallStep: 12, largeStep: 60, max: 2020 }, $("<input />"));
+    var largeTicks = slider.wrapper.find(".k-tick-large");
+    var largetTickNumbers = [1900, 1960, 2020];
+    largeTicks.each(function(index) {
+        equal($(this).find("span").text(), largetTickNumbers[index]);
+    });
+});
+
+asyncTest("slider should restore its original value on form reset", function () {
+    QUnit.fixture.append('<form id="sliderForm" action=""><div><input id="singleSlider" value="1" /></div></form>');
+    var slider = new Slider($("#singleSlider")[0], { tooltip: { enabled: false } });
+
+    slider.value(2);
+    $("#sliderForm")[0].reset();
+
+    setTimeout(function () {
+        start();
+        equal(slider.value(), 1);
+    });
+});
+
+asyncTest("slider should restore its min value on form reset when no initial value has been defined", function () {
+    QUnit.fixture.append('<form id="sliderForm" action=""><div><input id="singleSlider" /></div></form>');
+    var slider = new Slider($("#singleSlider")[0], { tooltip: { enabled: false }, min: 2 });
+
+    slider.value(3);
+    $("#sliderForm")[0].reset();
+
+    setTimeout(function () {
+        start();
+        equal(slider.value(), 2);
+    });
+});
+
+}());

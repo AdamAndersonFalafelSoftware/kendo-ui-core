@@ -82,7 +82,7 @@ var __meta__ = {
             that._aria();
 
             if (options.autoBind) {
-                that._filterSource();
+                that._filterSource(); //TODO: diff when just bind and actually filter
             } else {
                 text = options.text;
 
@@ -131,6 +131,7 @@ var __meta__ = {
             "close",
             CHANGE,
             "select",
+            "filtering",
             "dataBinding",
             "dataBound",
             "cascade"
@@ -239,14 +240,16 @@ var __meta__ = {
         },
 
         open: function() {
-            var that = this,
-                serverFiltering = that.dataSource.options.serverFiltering;
+            var that = this;
+            var state = that._state;
+            var serverFiltering = that.dataSource.options.serverFiltering;
 
             if (that.popup.visible()) {
                 return;
             }
 
-            if (!that.ul[0].firstChild || (that._state === STATE_ACCEPT && !serverFiltering)) {
+            if ((!that.ul[0].firstChild && state !== STATE_FILTER) ||
+                (state === STATE_ACCEPT && !serverFiltering)) {
                 that._open = true;
                 that._state = STATE_REBIND;
                 that._filterSource();
@@ -533,7 +536,7 @@ var __meta__ = {
 
             if (!that.ul[0].firstChild) {
                 dataSource.one(CHANGE, function () {
-                    if (dataSource.data()[0]) {
+                    if (dataSource.view()[0]) {
                         that.search(word);
                     }
                 }).fetch();

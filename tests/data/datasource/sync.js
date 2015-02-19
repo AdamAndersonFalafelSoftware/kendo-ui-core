@@ -535,6 +535,36 @@ test("hasChanges returns true if record is deleted", function() {
     ok(dataSource.hasChanges());
 });
 
+test("hasChanges returns true if model is updated on third page", function() {
+    var dataSource = new DataSource({
+        schema: {
+            model: { id: "id" }
+        },
+        pageSize: 1,
+        data: [{ id: 0, foo: "bar"}, { id: 1, foo: "bar"}, { id: 2, foo: "bar"}]
+    });
+
+    dataSource.read();
+
+    dataSource.at(2).set("foo", "baz");
+
+    ok(dataSource.hasChanges());
+});
+
+test("hasChanges returns false if model is not updated with paging enabled", function() {
+    var dataSource = new DataSource({
+        schema: {
+            model: { id: "id" }
+        },
+        pageSize: 1,
+        data: [{ id: 0, foo: "bar"}, { id: 1, foo: "bar"}, { id: 2, foo: "bar"}]
+    });
+
+    dataSource.read();
+
+    ok(!dataSource.hasChanges());
+});
+
 test("requestStart is called for each sync request", 3, function() {
     var dataSource = new DataSource({
         schema: {
@@ -691,7 +721,6 @@ test("total is correct after removing all items, syncing adding new one and canc
     equal(dataSource.total(), 1);
 });
 
-
 test("total is updated after removing all items and adding new", function() {
     var dataSource = new DataSource({
         schema: {
@@ -712,6 +741,38 @@ test("total is updated after removing all items and adding new", function() {
     equal(dataSource.total(), 1);
 });
 
+test("sync returns promise", function() {
+    var dataSource = new DataSource({
+        schema: {
+            model: { id: "id" }
+        },
+        data: [{ id: 1, foo: "bar"},{ id: 2, foo: "baz"}]
+    });
 
+    dataSource.read();
+
+    var promise = dataSource.sync();
+
+    ok($.isFunction(promise.then));
+});
+
+test("sync returns promise when offline", 2, function() {
+    var dataSource = new DataSource({
+        schema: {
+            model: { id: "id" }
+        },
+        data: [{ id: 1, foo: "bar"},{ id: 2, foo: "baz"}]
+    });
+
+    dataSource.read();
+
+    dataSource.online(false);
+
+    var promise = dataSource.sync();
+
+    ok($.isFunction(promise.then));
+
+    promise.then($.proxy(ok, this, true));
+});
 
 }());

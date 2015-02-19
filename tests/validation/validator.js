@@ -281,6 +281,15 @@
         ok(span.eq(1).text(), "invalid");
     });
 
+    test("existing error message element container retains its ID attribute", function() {
+        container.append($('<input type="text" name="foo" required /><span class="k-invalid-msg" id="errSpan" data-kendo-for="foo"/>')),
+        validator = setup(container, { errorTemplate: "<span>${message}</span>" });
+        validator.validate();
+
+        var span = container.find("span");
+        ok(span.eq(0).attr("id"), "errSpan");
+    });
+
     test("existing error message element in multiple containers is reused", function() {
         container.append($('<div></div><div><input type="text" name="foo" required validationMessage="invalid" /><span>some text</span><span class="k-invalid-msg" data-kendo-for="foo"/></div>')),
         validator = setup(container.find("div"), { errorTemplate: "<span>${message}</span>" });
@@ -299,6 +308,15 @@
         validator.validate();
 
         equal(container.find("span.k-invalid-msg").length, 1);
+    });
+
+    test("correct error message element container for the validated element is used", function() {
+        container.append($('<div><span class="k-invalid-msg" data-kendo-for="foo"/><input type="text" name="foo" required validationMessage="invalid" /><span class="k-invalid-msg" data-kendo-for="someotherfield"/></div>')),
+        validator = setup(container);
+        validator.validate();
+
+        equal(container.find("span.k-invalid-msg:visible").length, 1);
+        ok(container.find("span[data-kendo-for=foo]").is(":visible"));
     });
 
     test("error message as external template", function() {
@@ -398,7 +416,7 @@
         ok(!input.next("span:visible").length);
     });
 
-    test("external message element is shown when validating input with specail charecters", function() {
+    test("external message element is shown when validating input with special characters", function() {
         var input = $('<input name="f.b" type="text" required validationMessage="invalid" /><input name="f.b.c" type="hidden" /><span class="k-invalid-msg" data-kendo-for="f.b" id="foo"></span>');
         container.append(input);
         var validator = setup(container);
@@ -628,6 +646,13 @@
         ok(validator.validate());
     });
 
+    test("validate step with number with accuracy problem", function() {
+        var input = $('<input type="number" value="0.56" step="0.01" min="0" max="1" />'),
+            validator = setup(input);
+
+        ok(validator.validate());
+    });
+
     test("validate min defaults to 0 if not set and step is set - invalid value", function() {
         var input = $('<input type="number" value="8" step="3" />'),
             validator = setup(input);
@@ -768,13 +793,24 @@
         ok(validator.validate());
     });
 
-    test("validate class is added to the invalid inputs", function() {
+    test("invalid class is added to the invalid inputs", function() {
         var input = $('<input type="text" required />'),
             validator = setup(input);
 
         validator.validate();
 
         ok(input.hasClass("k-invalid"));
+    });
+
+    test("valid class is added to the valid inputs", function() {
+        var input = $('<input type="text" required />'),
+            validator = setup(input);
+
+        input.val(1);
+
+        validator.validate();
+
+        ok(input.hasClass("k-valid"));
     });
 
     test("aria-invalid is added to the invalid input", function() {
@@ -795,7 +831,7 @@
         ok(input.next().filter("[role=alert]").length);
     });
 
-    test("aria-invalid is remove after input become valid", function() {
+    test("aria-invalid is removed after input become valid", function() {
         var input = $('<input type="text" required />'),
             validator = setup(input);
 
@@ -806,7 +842,7 @@
         ok(!input.filter("[aria-invalid]").length);
     });
 
-    test("validate class is not added to the valid inputs", function() {
+    test("invalid class is not added to a valid input", function() {
         var input = $('<input type="text" required />'),
             validator = setup(input);
 
@@ -817,7 +853,16 @@
         ok(!input.hasClass("k-invalid"));
     });
 
-    test("validate class is remove to if invalid inputs pass validation", function() {
+    test("valid class is not added to an invalid input", function() {
+      var input = $('<input type="text" required />'),
+      validator = setup(input);
+
+      validator.validate();
+
+      ok(!input.hasClass("k-valid"));
+    });
+
+    test("invalid class is removed if an invalid input passes validation", function() {
         var input = $('<input type="text" required />'),
             validator = setup(input);
 
@@ -828,6 +873,15 @@
         validator.validate();
 
         ok(!input.hasClass("k-invalid"));
+    });
+
+    test("valid class is removed if a valid input fails validation", function() {
+      var input = $('<input type="text" required />'),
+      validator = setup(input);
+
+      validator.validate();
+
+      ok(!input.hasClass("k-valid"));
     });
 
     test("checkbox field is revalidated on click", function() {

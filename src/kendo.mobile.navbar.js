@@ -14,7 +14,6 @@ var __meta__ = {
     var kendo = window.kendo,
         mobile = kendo.mobile,
         ui = mobile.ui,
-        roleSelector = kendo.roleSelector,
         Widget = ui.Widget;
 
     function createContainer(align, element) {
@@ -28,13 +27,14 @@ var __meta__ = {
     function toggleTitle(centerElement) {
         var siblings = centerElement.siblings(),
             noTitle = !!centerElement.children("ul")[0],
-            showTitle = (!!siblings[0] && $.trim(centerElement.text()) === "");
+            showTitle = (!!siblings[0] && $.trim(centerElement.text()) === ""),
+            android = kendo.mobile.application && kendo.mobile.application.element.is(".km-android");
 
         centerElement.prevAll().toggleClass("km-absolute", noTitle);
         centerElement.toggleClass("km-show-title", showTitle);
         centerElement.toggleClass("km-fill-title", showTitle && !$.trim(centerElement.html()));
         centerElement.toggleClass("km-no-title", noTitle);
-        centerElement.toggleClass("km-hide-title", centerElement.css("visibility") == "hidden" && !siblings.children().is(":visible"));
+        centerElement.toggleClass("km-hide-title", android && !siblings.children().is(":visible"));
     }
 
     var NavBar = Widget.extend({
@@ -58,7 +58,7 @@ var __meta__ = {
         },
 
         title: function(value) {
-            this.element.find(roleSelector("view-title")).text(value);
+            this.element.find(kendo.roleSelector("view-title")).text(value);
             toggleTitle(this.centerElement);
         },
 

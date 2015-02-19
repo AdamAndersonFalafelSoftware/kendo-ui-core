@@ -23,7 +23,7 @@ var __meta__ = {
         CHANGE = "change",
         NS = ".kendoSelectable",
         UNSELECTING = "k-state-unselecting",
-        INPUTSELECTOR = "input,a,textarea,.k-multiselect-wrap,select,button",
+        INPUTSELECTOR = "input,a,textarea,.k-multiselect-wrap,select,button,a.k-button>.k-icon,span.k-icon.k-i-expand,span.k-icon.k-i-collapse",
         msie = kendo.support.browser.msie,
         supportEventDelegation = false;
 
@@ -54,6 +54,11 @@ var __meta__ = {
             that.relatedTarget = that.options.relatedTarget;
 
             multiple = that.options.multiple;
+
+            if (this.options.aria && multiple) {
+                that.element.attr("aria-multiselectable", true);
+            }
+
             that.userEvents = new kendo.UserEvents(that.element, {
                 global: true,
                 allowSelection: true,
@@ -161,6 +166,8 @@ var __meta__ = {
                 that._items = currentElement.find(that.options.filter);
             }
 
+            e.sender.capture();
+
             that._marquee
                 .appendTo(document.body)
                 .css({
@@ -216,7 +223,6 @@ var __meta__ = {
             that._lastActive = that._downTarget;
             that._items = null;
         },
-
 
         _invalidateSelectables: function(position, ctrlKey) {
             var idx,
@@ -325,6 +331,10 @@ var __meta__ = {
             return true;
         },
 
+        resetTouchEvents: function() {
+            this.userEvents.cancel();
+        },
+
         clear: function() {
             var items = this.element.find(this.options.filter + "." + SELECTED);
             this._unselect(items);
@@ -379,7 +389,20 @@ var __meta__ = {
         }
     });
 
+    Selectable.parseOptions = function(selectable) {
+        var asLowerString = typeof selectable === "string" && selectable.toLowerCase();
+
+        return {
+            multiple: asLowerString && asLowerString.indexOf("multiple") > -1,
+            cell: asLowerString && asLowerString.indexOf("cell") > -1
+        };
+    };
+
     function collision(element, position) {
+        if (!element.is(":visible")) {
+            return false;
+        }
+
         var elementPosition = kendo.getOffset(element),
             right = position.left + position.width,
             bottom = position.top + position.height;

@@ -121,7 +121,7 @@ var __meta__ = {
 
             if(disabled && draggedElement.is(disabled)) {
                 e.preventDefault();
-            } else if(handler && !$(target).is(handler)) {
+            } else if(handler && !$(e.initialTarget).is(handler)) {
                 e.preventDefault();
             } else {
 

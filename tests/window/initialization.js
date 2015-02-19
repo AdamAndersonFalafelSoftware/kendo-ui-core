@@ -263,6 +263,20 @@
         ok(dialog.wrapper.is(".k-window-titleless"));
     });
 
+    test("window has margin and padding that match the titlebar height", 2, function () {
+        var dialog = createWindow({
+            title: "foo"
+        });
+
+        var titleBar = dialog.wrapper.children(".k-window-titlebar");
+        var titleBarHeight = titleBar.outerHeight();
+        var margin = parseInt(titleBar.css("margin-top"), 10);
+        var padding = parseInt(dialog.wrapper.css("padding-top"), 10);
+
+        equal(margin, -titleBarHeight);
+        equal(padding, titleBarHeight);
+    });
+
     test("k-rtl class is not rendered by default", function() {
         var dialog = createWindow({
             title: "foo"
@@ -507,5 +521,16 @@
         createWindow({ appendTo: form, modal: true });
 
         equal(form.children(".k-overlay").length, 1);
+    });
+
+    test("window content element is visible after initialization if wrapper widget with visible:false is initialized inside a hidden container", function () {
+        QUnit.fixture.css("visibility", "hidden");
+        var dialog = createWindow({ visible: false }, $("<div class='wnd' />").appendTo(QUnit.fixture).hide());
+
+        dialog.open();
+
+        QUnit.fixture.css("visibility", "");
+
+        equal(dialog.element.css("visibility"), "visible");
     });
 })();

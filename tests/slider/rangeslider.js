@@ -317,10 +317,49 @@ test("rangeSlider resize should resize", function () {
 });
 
 test("rangeSlider should render large ticks instead of small ticks", function () {
-    var slider = newSlider({ smallStep: 1, largeStep: 1 }, $("<input />"));
-    slider.wrapper.find(".k-tick-large").each(function() {
+    var rangeSlider = newRangeSlider({ smallStep: 1, largeStep: 1 });
+    rangeSlider.wrapper.find(".k-tick-large").each(function() {
         ok($(this).hasClass("k-tick-large"));
     })
+});
+
+test("rangeSlider should not modify input value with bg-BG culture", function () {
+    kendo.culture("bg-BG");
+    var rangeSlider = newRangeSlider({}, $("<div><input value='2,2' /><input value='4,4' /></div>"));
+        inputs = rangeSlider.element.find("input");
+    equal(inputs.eq(0).val(), "2,2");
+    equal(inputs.eq(1).val(), "4,4");
+    kendo.culture("en-US");
+});
+
+asyncTest("range slider should restore its original values on form reset", 2, function () {
+    QUnit.fixture.append('<form id="sliderForm" action=""><div id="rangeSlider"><input value="1" /><input value="9" /></div></form>');
+    var rangeSlider = new RangeSlider($("#rangeSlider")[0], { tooltip: { enabled: false } });
+
+    rangeSlider.values(2, 8);
+    $("#sliderForm")[0].reset();
+
+    setTimeout(function () {
+        start();
+        var values = rangeSlider.values();
+        equal(values[0], 1);
+        equal(values[1], 9);
+    });
+});
+
+asyncTest("range slider should restore its min and max values on form reset when no initial values have been defined", 2, function () {
+    QUnit.fixture.append('<form id="sliderForm" action=""><div id="rangeSlider"><input /><input /></div></form>');
+    var rangeSlider = new RangeSlider($("#rangeSlider")[0], { tooltip: { enabled: false }, min: 1, max: 9 });
+
+    rangeSlider.values(2, 8);
+    $("#sliderForm")[0].reset();
+
+    setTimeout(function () {
+        start();
+        var values = rangeSlider.values();
+        equal(values[0], 1);
+        equal(values[1], 9);
+    });
 });
 
 }());

@@ -48,7 +48,7 @@ var __meta__ = {
         SELECTEDSELECTOR = "." + SELECTEDCLASS,
         HIGHLIGHTCLASS = "k-state-highlight",
         ACTIVEITEMSELECTOR = ITEM + ":not(.k-state-disabled)",
-        clickableItems = ACTIVEITEMSELECTOR + " > .k-link",
+        clickableItems = "> " + ACTIVEITEMSELECTOR + " > " + LINKSELECTOR + ", .k-panel > " + ACTIVEITEMSELECTOR + " > " + LINKSELECTOR,
         disabledItems = ITEM + ".k-state-disabled > .k-link",
         selectableItems = "> li > " + SELECTEDSELECTOR + ", .k-panel > li > " + SELECTEDSELECTOR,
         defaultState = "k-state-default",
@@ -589,7 +589,7 @@ var __meta__ = {
             }
 
             var group = item.children(VISIBLEGROUP),
-                next = item.next();
+                next = item.nextAll(":visible").first();
 
             if (group[0]) {
                 next = group.children("." + FIRST);
@@ -599,7 +599,7 @@ var __meta__ = {
                 next = item.parent(VISIBLEGROUP).parent(ITEM).next();
             }
 
-            if (!next[0] || !next.is(":visible")) {
+            if (!next[0]) {
                 next = this._first();
             }
 
@@ -615,7 +615,7 @@ var __meta__ = {
                 return this._last();
             }
 
-            var prev = item.prev(),
+            var prev = item.prevAll(":visible").first(),
                 result;
 
             if (!prev[0]) {
@@ -661,6 +661,10 @@ var __meta__ = {
                 parent = $(PanelBar.renderGroup({ group: groupData })).appendTo(referenceItem);
             }
 
+            if (item instanceof kendo.Observable) {
+                item = item.toJSON();
+            }
+
             if (plain || $.isArray(item)) { // is JSON
                 items = $.map(plain ? [ item ] : item, function (value, idx) {
                             if (typeof value === "string") {
@@ -677,7 +681,7 @@ var __meta__ = {
                     referenceItem.attr(ARIA_EXPANDED, false);
                 }
             } else {
-                if (typeof item == "string" && item[0] != "<") {
+                if (typeof item == "string" && item.charAt(0) != "<") {
                     items = that.element.find(item);
                 } else {
                     items = $(item);

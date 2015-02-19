@@ -314,6 +314,21 @@
         equal(splitter.dom.find(".k-overlay").length, 0);
     });
 
+    test("test name", function() {
+        splitter = create({
+            panes: [ { collapsible: true }, {} ]
+        });
+
+        splitter.dom.find(".k-collapse-prev")
+            .trigger("mousedown")
+
+        splitter.dom.find(".k-overlay:first")
+            .trigger("mouseup")
+            .trigger("click");
+
+        equal(splitter.dom.find(".k-overlay").length, 0);
+    });
+
     test("collapsed panes can be expanded again", function() {
         splitter = create({
             panes: [
@@ -350,4 +365,42 @@
 
         equal(splitter.dom.find(".k-pane:first").width(), 0);
     });
+
+    test("collapsible pane with collapsedSize collapses to this size", function() {
+        splitter = create({
+            panes: [
+                { collapsible: true, collapsedSize: "20px" },
+                {}
+            ]
+        });
+
+        splitter.dom.find(".k-collapse-prev").click();
+
+        equal(splitter.dom.find(".k-pane:first").width(), 20);
+    });
+
+    test("collapsed pane with collapsedSize is rendered with this size", function() {
+        splitter = create({
+            panes: [
+                { collapsible: true, collapsed: true, collapsedSize: "20px" },
+                {}
+            ]
+        });
+
+        equal(splitter.dom.find(".k-pane:first").width(), 20);
+    });
+
+    test("collapsible pane adds k-state-collapsed class when collapsed", function() {
+        splitter = create({
+            panes: [
+                { collapsible: true },
+                {}
+            ]
+        });
+
+        splitter.dom.find(".k-collapse-prev").click();
+
+        ok(splitter.dom.find(".k-pane:first").hasClass("k-state-collapsed"));
+    });
+
 })();

@@ -148,6 +148,10 @@ var __meta__ = {
                 return this.element.val();
             }
 
+            if (value === null) {
+                value = "";
+            }
+
             if (!emptyMask) {
                 element.val(value);
                 return;
@@ -260,6 +264,10 @@ var __meta__ = {
             var unmasked;
             var start;
 
+            if (kendo._activeElement() !== element) {
+                return;
+            }
+
             if (value !== that._old && !that._pasting) {
                 start = caret(element)[0];
                 unmasked = that._unmask(value.substring(start), start);
@@ -355,7 +363,7 @@ var __meta__ = {
         },
 
         _keypress: function(e) {
-            if (e.which === 0 || e.ctrlKey || e.keyCode === keys.ENTER) {
+            if (e.which === 0 || e.metaKey || e.ctrlKey || e.keyCode === keys.ENTER) {
                 return;
             }
 

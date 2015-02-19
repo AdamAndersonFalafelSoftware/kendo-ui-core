@@ -124,10 +124,17 @@ var __meta__ = {
             var action = currentTarget.data("action");
 
             if (action) {
-                kendo.getter(action)(window)({
+                var actionData = {
                     target: this.target,
                     context: this.context
-                });
+                },
+                $angular = this.options.$angular;
+
+                if ($angular) {
+                    this.element.injector().get("$parse")(action)($angular[0])(actionData);
+                } else {
+                    kendo.getter(action)(window)(actionData);
+                }
             }
 
             this.trigger(COMMAND, { target: this.target, context: this.context, currentTarget: currentTarget });
@@ -136,9 +143,12 @@ var __meta__ = {
             this._close();
         },
 
-        _close: function() {
-            this.close();
-            this.trigger(CLOSE);
+        _close: function(e) {
+            if (!this.trigger(CLOSE)) {
+                this.close();
+            } else {
+                e.preventDefault();
+            }
         }
     });
 

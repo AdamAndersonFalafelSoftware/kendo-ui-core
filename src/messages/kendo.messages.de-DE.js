@@ -1,5 +1,41 @@
 
 
+/* Filter cell operator messages */
+
+if (kendo.ui.FilterCell) {
+kendo.ui.FilterCell.prototype.options.operators =
+$.extend(true, kendo.ui.FilterCell.prototype.options.operators,{
+  "date": {
+    "eq": "Ist gleich",
+    "gt": "Ist nach",
+    "gte": "Ist nach oder gleich",
+    "lt": "Ist vor",
+    "lte": "Ist vor oder gleich",
+    "neq": "Ist nicht gleich"
+  },
+  "enums": {
+    "eq": "Ist gleich",
+    "neq": "Ist nicht gleich"
+  },
+  "number": {
+    "eq": "Ist gleich",
+    "gt": "Ist größer als",
+    "gte": "Ist größer als oder gleich",
+    "lt": "Ist kleiner",
+    "lte": "Ist kleiner als oder gleich",
+    "neq": "Ist nicht gleich"
+  },
+  "string": {
+    "contains": "Beinhaltet",
+    "doesnotcontain": "Beinhaltet nicht",
+    "endswith": "Endet mit",
+    "eq": "Ist gleich",
+    "neq": "Ist nicht gleich",
+    "startswith": "Beginnt mit"
+  }
+});
+}
+
 /* Filter menu operator messages */
 
 if (kendo.ui.FilterMenu) {
@@ -13,7 +49,7 @@ $.extend(true, kendo.ui.FilterMenu.prototype.options.operators,{
     "lte": "Ist vor oder gleich",
     "neq": "Ist nicht gleich"
   },
-  "enum": {
+  "enums": {
     "eq": "Ist gleich",
     "neq": "Ist nicht gleich"
   },
@@ -173,6 +209,18 @@ $.extend(true, kendo.ui.Editor.prototype.options.messages,{
 });
 }
 
+/* FilterCell messages */
+
+if (kendo.ui.FilterCell) {
+kendo.ui.FilterCell.prototype.options.messages =
+$.extend(true, kendo.ui.FilterCell.prototype.options.messages,{
+  "clear": "Löschen",
+  "filter": "Filter",
+  "isFalse": "ist falsch",
+  "isTrue": "ist richtig",
+  "operator": "Operator"
+});
+}
 /* FilterMenu messages */
 
 if (kendo.ui.FilterMenu) {
@@ -249,7 +297,7 @@ if (kendo.ui.Upload) {
 kendo.ui.Upload.prototype.options.localization =
 $.extend(true, kendo.ui.Upload.prototype.options.localization,{
   "cancel": "Beenden",
-  "dropFilesHere": "Dateien hier fallen lassen zum hochladen",
+  "dropFilesHere": "Dateien hier fallen lassen zum Hochladen",
   "remove": "Löschen",
   "retry": "Wiederholen",
   "select": "Wählen Sie...",
@@ -257,8 +305,8 @@ $.extend(true, kendo.ui.Upload.prototype.options.localization,{
   "statusUploaded": "hochgeladet",
   "statusUploading": "hochladen",
   "uploadSelectedFiles": "Dateien hochladen",
-  "headerStatusUploaded": "Done",
-  "headerStatusUploading": "Uploading..."
+  "headerStatusUploaded": "Abgeschlossen",
+  "headerStatusUploading": "Hochladen..."
 });
 }
 
@@ -310,8 +358,8 @@ $.extend(true, kendo.ui.Scheduler.prototype.options.messages,{
     "workWeek": "Work Week"
   },
   "deleteWindowTitle": "Termin löschen",
-  "showFullDay": "Zeigen ganztags",
-  "showWorkDay": "Zeigen Geschäftszeiten"
+  "showFullDay": "Ganzen Tag anzeigen",
+  "showWorkDay": "Geschäftszeiten anzeigen"
 });
 }
 
@@ -320,7 +368,7 @@ $.extend(true, kendo.ui.Scheduler.prototype.options.messages,{
 if (kendo.ui.Validator) {
 kendo.ui.Validator.prototype.options.messages =
 $.extend(true, kendo.ui.Validator.prototype.options.messages,{
-  "required: "{0"} ist notwendig",
+  "required": "{0} ist notwendig",
   "pattern": "{0} ist ungültig",
   "min": "{0} muss größer oder gleich sein als {1}",
   "max": "{0} muss kleiner oder gleich sein als {1}",

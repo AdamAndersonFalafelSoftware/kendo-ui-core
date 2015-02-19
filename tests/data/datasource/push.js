@@ -139,6 +139,16 @@ test("pushCreate inserts a new item in the data source", function() {
     equal(dataSource.at(0).foo, "foo");
 });
 
+test("pushCreate does not wrap observable objects", function() {
+    var dataSource = new DataSource();
+
+    var observableObject = new kendo.data.ObservableObject({ foo: "foo" });
+
+    dataSource.pushCreate(observableObject);
+
+    equal(observableObject.uid, dataSource.at(0).uid);
+});
+
 test("pushCreate updates the total when autoSync is set to true", function() {
     var dataSource = new DataSource({
        autoSync: true
@@ -382,7 +392,7 @@ test("pushDestroy fires the push event", 5, function() {
         push: function(e) {
             equal(e.items.length, 2);
             equal(e.type, "destroy");
-            equal(e.items[0] instanceof kendo.data.ObservableObject, true);
+            ok(e.items[0] instanceof kendo.data.ObservableObject);
             equal(e.items[0].foo, "foo");
             equal(e.items[1].foo, "foo");
         },
